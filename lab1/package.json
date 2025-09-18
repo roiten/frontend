@@ -1,0 +1,14 @@
+{
+  "name": "polish_prefix_notation",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node dist/polish.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}
