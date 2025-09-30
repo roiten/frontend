@@ -1,3 +1,7 @@
 ./node_modules
 ./.idea
 ./eslint.config.mjs
+./.prettierrc
+./.prettierignore
+stylelint.config.mjs
+slide_maker/node_modules
