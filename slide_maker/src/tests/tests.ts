@@ -13,16 +13,16 @@ import {
     setTextDescription,
     setSlideBackground,
     chooseSlide,
-} from './types';
+} from '../models/types.ts';
 
-import type { Presentation, Image, Text, Slide } from 'types.ts';
+import type { Presentation, Image, Text, Slide } from 'src/components/types.ts';
 
 import {
     DEFAULT_BACKGROUND,
     DEFAULT_PRESENTATION,
     IMAGE_PRESETS,
     TEXT_PRESETS,
-} from './properties';
+} from '../constants/properties.ts';
 
 export function minimalTest(): Presentation {
     let minimalPresentation: Presentation = {
@@ -86,7 +86,7 @@ export function maxTest(): Presentation {
     let maxSlide1: Slide = {
         id: 'slide1',
         content: [],
-        background: { type: 'color', color: 'green' },
+        background: { type: 'color', color: '#a0a0a0' },
     };
 
     let maxSlide2: Slide = {
@@ -121,7 +121,7 @@ export function maxTest(): Presentation {
         size: { width: 100, height: 30 },
         transparency: 0,
         font: {
-            family: 'Times New Roman',
+            family: 'Arial',
             color: 'gray',
             size: 14,
             weight: 400,
@@ -150,17 +150,17 @@ export function maxTest(): Presentation {
     const maxImage1: Image = {
         id: 'image1',
         type: 'image',
-        source: 'img1.png',
-        transparency: 0,
+        source: 'https://i.ytimg.com/vi/RVwWaURYhFU/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGFggZSg-MA8=&rs=AOn4CLBuN6l4D_Hvfzrv4kDl1maseMeDYw',
+        transparency: 1,
         position: { x: 0, y: 0 },
-        size: { width: 200, height: 200 },
+        size: { width: 1920, height: 500 },
     };
 
     const maxImage2: Image = {
         id: 'image2',
         type: 'image',
-        source: '/home/dmitry/institute/frontend/slide_maker/public/icons/img1.png',
-        transparency: 0.1,
+        source: 'https://habrastorage.org/webt/fr/d5/en/frd5enzjfyfdksaoaema1gvnpva.png',
+        transparency: 0.5,
         position: { x: 50, y: 50 },
         size: { width: 300, height: 300 },
     };

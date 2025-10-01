@@ -1,6 +1,6 @@
-import type { Presentation, Slide, SlideObject, Background, Text, Image } from './types.ts';
+import type { Presentation, Slide, SlideObject, Background } from './types.ts';
 
-import * as properties from './properties.ts';
+import * as properties from '../constants/properties.ts';
 
 // Изменение названия презентации
 function setPresentationTitle(pres: Presentation, newTitle: string): Presentation {
@@ -71,7 +71,7 @@ function setObjectPositionSize(
 ): SlideObject {
     return {
         ...slideObject,
-        position: { ...slideObject.size, width: size.width, height: size.height },
+        size: { ...slideObject.size, width: size.width, height: size.height },
     } as SlideObject;
 }
 

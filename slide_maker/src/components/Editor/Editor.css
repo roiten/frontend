@@ -1,0 +1,7 @@
+.editor {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    height: 100vh;
+    position: relative;
+}

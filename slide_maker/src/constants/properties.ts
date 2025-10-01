@@ -1,4 +1,9 @@
-import type { Presentation, Text, Image, Background } from './types';
+import type {
+    Presentation,
+    // Text,
+    // Image,
+    Background,
+} from '../models/types.ts';
 export const TEXT_PRESETS = {
     type: 'text',
     position: { x: 50, y: 50 },
@@ -30,7 +35,7 @@ export const IMAGE_PRESETS = {
     transparency: 1,
 } as const;
 
-export const DEFAULT_BACKGROUND: types.Background = {
+export const DEFAULT_BACKGROUND: Background = {
     type: 'color',
     color: 'white',
 } as const;

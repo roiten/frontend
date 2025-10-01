@@ -7,7 +7,7 @@ export const saveTools: Tool[] = [
     { name: 'Сохранить', icon: '/icons/floppy-disk.svg' },
     { name: 'в PDF', icon: '/icons/export.svg' },
     { name: 'История', icon: '/icons/clock-counter-clockwise.svg' },
-]
+];
 
 export const editTools: Tool[] = [
     { name: 'Шрифт', icon: '/icons/text-aa.svg' },
@@ -26,4 +26,4 @@ export const slidebarTools: Tool[] = [
     { name: 'Удалить слайд', icon: '/icons/trash-simple.svg' },
     { name: 'Применить форматирование к слайду', icon: '/icons/paint-roller.svg' },
     { name: 'Выбрать', icon: '/icons/selection-all.svg' },
-]
+];

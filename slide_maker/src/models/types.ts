@@ -153,7 +153,7 @@ function setObjectPositionSize(
 ): SlideObject {
     return {
         ...slideObject,
-        position: { ...slideObject.size, width: size.width, height: size.height },
+        size: { ...slideObject.size, width: size.width, height: size.height },
     } as SlideObject;
 }
 
