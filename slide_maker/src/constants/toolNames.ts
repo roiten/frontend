@@ -24,6 +24,9 @@ export const editTools: Tool[] = [
 export const slidebarTools: Tool[] = [
     { name: 'Добавить новый слайд', icon: '/icons/plus.svg' },
     { name: 'Удалить слайд', icon: '/icons/trash-simple.svg' },
-    { name: 'Применить форматирование к слайду', icon: '/icons/paint-roller.svg' },
+    {
+        name: 'Применить форматирование к слайду',
+        icon: '/icons/paint-roller.svg',
+    },
     { name: 'Выбрать', icon: '/icons/selection-all.svg' },
 ];

@@ -1,28 +1,10 @@
 import {
-    setPresentationTitle,
     addSlide,
-    removeSlide,
-    moveSlide,
     addSlideObject,
-    removeSlideObject,
-    editObject,
-    setObjectPositionCoordinates,
-    setObjectPositionSize,
-    setTextSize,
-    setTextFont,
-    setTextDescription,
     setSlideBackground,
-    chooseSlide,
 } from '../models/types.ts';
 
-import type { Presentation, Image, Text, Slide } from 'src/components/types.ts';
-
-import {
-    DEFAULT_BACKGROUND,
-    DEFAULT_PRESENTATION,
-    IMAGE_PRESETS,
-    TEXT_PRESETS,
-} from '../constants/properties.ts';
+import type { Presentation, Image, Text, Slide } from '../models/types.ts';
 
 export function minimalTest(): Presentation {
     let minimalPresentation: Presentation = {
@@ -77,7 +59,7 @@ export function maxTest(): Presentation {
     let maxPresentation: Presentation = {
         title: 'Presentation',
         slides: [],
-        currentSlide: 'slide1',
+        currentSlide: 'slide2',
         author: 'Dmitry',
         createdAt: new Date(),
         editedAt: new Date(),
@@ -92,13 +74,17 @@ export function maxTest(): Presentation {
     let maxSlide2: Slide = {
         id: 'slide2',
         content: [],
-        background: { type: 'picture', source: 'background.png', transparency: 0.5 },
+        background: {
+            type: 'picture',
+            source: 'background.png',
+            transparency: 0.5,
+        },
     };
 
     let maxSlide3: Slide = {
         id: 'slide3',
         content: [],
-        background: { type: 'color', color: 'green' },
+        background: { type: 'color', color: 'red' },
     };
 
     let maxSlide4: Slide = {
@@ -110,20 +96,20 @@ export function maxTest(): Presentation {
     let maxSlide5: Slide = {
         id: 'slide5',
         content: [],
-        background: { type: 'color', color: 'green' },
+        background: { type: 'color', color: 'blue' },
     };
 
     const maxText1: Text = {
         id: 'text1',
         type: 'text',
-        description: 'Hello it`s test',
-        position: { x: 10, y: 20 },
-        size: { width: 100, height: 30 },
+        description: 'hello! text test',
+        position: { x: 10, y: 60 },
+        size: { width: 400, height: 30 },
         transparency: 0,
         font: {
             family: 'Arial',
-            color: 'gray',
-            size: 14,
+            color: 'white',
+            size: 38,
             weight: 400,
             textDecoration: 'none',
             textAlign: 'left',
@@ -133,14 +119,14 @@ export function maxTest(): Presentation {
     const maxText2: Text = {
         id: 'text2',
         type: 'text',
-        description: 'Hello world',
-        position: { x: 15, y: 25 },
-        size: { width: 150, height: 50 },
+        description: 'Hello world!',
+        position: { x: 15, y: 550 },
+        size: { width: 600, height: 50 },
         transparency: 0,
         font: {
             family: 'Comic Sans MS',
             color: 'black',
-            size: 16,
+            size: 46,
             weight: 700,
             textDecoration: 'underline',
             textAlign: 'center',
@@ -150,10 +136,10 @@ export function maxTest(): Presentation {
     const maxImage1: Image = {
         id: 'image1',
         type: 'image',
-        source: 'https://i.ytimg.com/vi/RVwWaURYhFU/maxresdefault.jpg?sqp=-oaymwEmCIAKENAF8quKqQMa8AEB-AH-CYAC0AWKAgwIABABGFggZSg-MA8=&rs=AOn4CLBuN6l4D_Hvfzrv4kDl1maseMeDYw',
+        source: 'https://avatars.mds.yandex.net/i?id=8eeb4769444ae6fbcba59763dd9eca47_l-10836825-images-thumbs&n=13',
         transparency: 1,
         position: { x: 0, y: 0 },
-        size: { width: 1920, height: 500 },
+        size: { width: 1200, height: 500 },
     };
 
     const maxImage2: Image = {
@@ -162,11 +148,17 @@ export function maxTest(): Presentation {
         source: 'https://habrastorage.org/webt/fr/d5/en/frd5enzjfyfdksaoaema1gvnpva.png',
         transparency: 0.5,
         position: { x: 50, y: 50 },
-        size: { width: 300, height: 300 },
+        size: { width: 530, height: 300 },
     };
 
-    maxSlide1 = addSlideObject(maxSlide1, maxText1);
     maxSlide1 = addSlideObject(maxSlide1, maxImage2);
+    maxSlide1 = addSlideObject(maxSlide1, maxText1);
+
+    maxSlide1 = setSlideBackground(maxSlide1, {
+        type: 'picture',
+        source: 'https://wallpapers.com/images/hd/4k-fall-hjtjbjpx534rzbsd.jpg',
+        transparency: 1,
+    });
 
     maxSlide2 = addSlideObject(maxSlide2, maxText2);
     maxSlide2 = addSlideObject(maxSlide2, maxImage1);

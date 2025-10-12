@@ -1,7 +1,7 @@
 import type { Slide } from '../../../models/types.ts';
 import { slidebarTools } from '../../../constants/toolNames.ts';
 import SlidePreview from './SlidePreview.tsx';
-import './Slidebar.css';
+import styles from './Slidebar.module.css';
 
 type Props = {
     slides: Slide[];
@@ -17,20 +17,24 @@ export default function Slidebar({ slides }: Props) {
     };
 
     return (
-        <div className="editor__slidebar">
-            <div className="slidebar__tools">
-                {slidebarTools.map((tool) => (
+        <div className={styles.slidebar}>
+            <div className={styles.slidebarTools}>
+                {slidebarTools.map(tool => (
                     <span
                         key={tool.name}
-                        className="slidebar__tool"
+                        className={styles.slidebarTool}
                         onClick={() => handleToolChoose(tool.name)}
                     >
-                        <img className={'tool__icon'} src={tool.icon} />
+                        <img
+                            className={styles.toolIcon}
+                            alt={tool.name}
+                            src={tool.icon}
+                        />
                     </span>
                 ))}
             </div>
 
-            <div className="slidebar__list">
+            <div className={styles.slidebarList}>
                 {slides.map((slide, index) => (
                     <SlidePreview
                         key={slide.id}

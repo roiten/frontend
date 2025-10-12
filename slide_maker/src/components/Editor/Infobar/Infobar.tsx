@@ -1,4 +1,4 @@
-import './Infobar.css';
+import styles from './Infobar.module.css';
 
 type Props = {
     author: string;
@@ -8,7 +8,7 @@ type Props = {
 
 export default function Infobar({ author, createdAt, editedAt }: Props) {
     return (
-        <div className="editor__infobar">
+        <div className={styles.infobar}>
             <span>Автор: {author}</span>
             <span>Создано: {createdAt.toString()}</span>
             <span>Изменено: {editedAt.toString()}</span>

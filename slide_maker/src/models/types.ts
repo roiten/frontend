@@ -69,10 +69,10 @@ type Image = BaseObject & {
 };
 
 // выделение
-type Selection = {
-    selectedSlideId: string[];
-    selectedObjectId: string[];
-};
+// type Selection = {
+//     selectedSlideId: string[];
+//     selectedObjectId: string[];
+// };
 
 // * изменение названия презентации ?
 // * добавление/удаление слайда ?

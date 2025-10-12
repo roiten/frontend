@@ -1,10 +1,10 @@
-.editor__infobar {
+.infobar {
     display: flex;
     bottom: 0;
     left: 0;
     right: 0;
     height: 40px;
-    background: #eee;
+    background: #eeeeee;
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;

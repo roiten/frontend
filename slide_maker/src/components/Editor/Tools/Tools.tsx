@@ -1,42 +1,30 @@
-import {
-    editTools,
-    saveTools,
-    // slidebarTools
-} from '../../../constants/toolNames.ts';
-import './Tools.css';
+import styles from './Tools.module.css';
+import { editTools, saveTools } from '../../../constants/toolNames.ts';
+import type { Tool } from '../../../constants/toolNames.ts';
+
+const tools: Tool[] = [...saveTools, ...editTools];
 
 export default function Tools() {
     const handleToolChoose = (tool: string) => {
-        console.log('выбран инструмент: ', tool);
+        console.log('выбран инструмент:', tool);
     };
 
     return (
-        <div className="editor__tools">
-            <div className="tools__action">
-                {saveTools.map((tool) => (
-                    <span
-                        key={tool.name}
-                        className="tool"
-                        onClick={() => handleToolChoose(tool.name)}
-                    >
-                        <img className={'tool__icon'} alt={tool.name} src={tool.icon} />
-                        <span className="tool__name">{tool.name}</span>
-                    </span>
-                ))}
-            </div>
-
-            <div className="tools__action">
-                {editTools.map((tool) => (
-                    <span
-                        key={tool.name}
-                        className="tool"
-                        onClick={() => handleToolChoose(tool.name)}
-                    >
-                        <img className={'tool__icon'} alt={tool.name} src={tool.icon} />
-                        <span className="tool__name">{tool.name}</span>
-                    </span>
-                ))}
-            </div>
+        <div className={styles.tools}>
+            {tools.map((tool: Tool) => (
+                <span
+                    key={tool.name}
+                    className={styles.tool}
+                    onClick={() => handleToolChoose(tool.name)}
+                >
+                    <img
+                        className={styles.toolIcon}
+                        alt={tool.name}
+                        src={tool.icon}
+                    />
+                    <span className={styles.toolName}>{tool.name}</span>
+                </span>
+            ))}
         </div>
     );
 }

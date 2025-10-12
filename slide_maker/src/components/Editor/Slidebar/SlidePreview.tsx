@@ -1,4 +1,10 @@
 import type { Slide } from '../../../models/types.ts';
+import styles from './Slidebar.module.css';
+import {
+    PREVIEW_WIDTH,
+    SLIDE_HEIGHT,
+    SLIDE_WIDTH,
+} from '../../../constants/properties.ts';
 
 type Props = {
     slide: Slide;
@@ -7,79 +13,69 @@ type Props = {
 };
 
 export default function SlidePreview({ slide, index, onClick }: Props) {
-    return (
-        <div className="slidebar__block" onClick={onClick} style={{ position: 'relative' }}>
-            <div
-                className="slidebar__block-background"
-                style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    background:
-                        slide.background.type === 'color'
-                            ? slide.background.color
-                            : `url(${slide.background.source}) no-repeat center/cover`,
-                    borderRadius: '20px',
-                    zIndex: 0,
-                }}
-            />
+    const scale = PREVIEW_WIDTH / SLIDE_WIDTH;
 
-            <div className="slidebar__block-content">
-                {slide.content.map((obj) =>
-                    obj.type === 'text' ? (
-                        <div
-                            key={obj.id}
-                            style={{
-                                position: 'absolute',
-                                top: obj.position.y / 10,
-                                left: obj.position.x / 10,
-                                width: obj.size.width / 10,
-                                height: obj.size.height / 10,
-                                color: obj.font.color,
-                                fontSize: obj.font.size / 5,
-                                fontFamily: obj.font.family,
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap',
-                                zIndex: 1,
-                            }}
-                        >
-                            {obj.description}
-                        </div>
-                    ) : (
-                        <img
-                            key={obj.id}
-                            src={obj.source}
-                            alt=""
-                            style={{
-                                position: 'absolute',
-                                top: obj.position.y / 10,
-                                left: obj.position.x / 10,
-                                width: obj.size.width / 10,
-                                height: obj.size.height / 10,
-                                opacity: obj.transparency,
-                                zIndex: 1,
-                            }}
-                        />
-                    )
-                )}
+    return (
+        <div
+            className={styles.thumbnail}
+            onClick={onClick}
+            style={{ width: PREVIEW_WIDTH }}
+        >
+            <div
+                className={styles.scaledContainer}
+                style={{ transform: `scale(${scale})` }}
+            >
+                <div
+                    className={styles.background}
+                    style={{
+                        background:
+                            slide.background.type === 'color'
+                                ? slide.background.color
+                                : `url(${slide.background.source}) center/cover`,
+                        width: SLIDE_WIDTH,
+                        height: SLIDE_HEIGHT,
+                    }}
+                />
+
+                <div className={styles.thumbnailContent}>
+                    {slide.content.map(obj =>
+                        obj.type === 'text' ? (
+                            <div
+                                key={obj.id}
+                                style={{
+                                    position: 'absolute',
+                                    top: obj.position.y,
+                                    left: obj.position.x,
+                                    width: obj.size.width,
+                                    height: obj.size.height,
+                                    color: obj.font.color,
+                                    fontSize: obj.font.size,
+                                    textDecoration: obj.font.textDecoration,
+                                    fontFamily: obj.font.family,
+                                }}
+                            >
+                                {obj.description}
+                            </div>
+                        ) : (
+                            <img
+                                key={obj.id}
+                                src={obj.source}
+                                alt=""
+                                style={{
+                                    position: 'absolute',
+                                    top: obj.position.y,
+                                    left: obj.position.x,
+                                    width: obj.size.width,
+                                    height: obj.size.height,
+                                    opacity: obj.transparency,
+                                }}
+                            />
+                        )
+                    )}
+                </div>
             </div>
 
-            <span
-                className="slidebar__block-label"
-                style={{
-                    position: 'absolute',
-                    bottom: 2,
-                    width: '100%',
-                    textAlign: 'center',
-                    fontSize: '0.7rem',
-                    color: '#333',
-                    zIndex: 2,
-                }}
-            >
-        Слайд {index + 1}
-      </span>
+            <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>
     );
 }

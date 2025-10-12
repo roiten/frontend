@@ -1,4 +1,4 @@
-import './Editor.css';
+import styles from './Editor.module.css';
 
 import type { Presentation } from '../../models/types.ts';
 import Header from './Header/Header.tsx';
@@ -12,15 +12,19 @@ type PresentationProps = {
     presentation: Presentation;
 };
 
-export default function Presentation({ presentation }: PresentationProps): JSX.Element {
-    const currentSlide = presentation.slides.find((s) => s.id === presentation.currentSlide);
+export default function Presentation({
+    presentation,
+}: PresentationProps): JSX.Element {
+    const currentSlide = presentation.slides.find(
+        s => s.id === presentation.currentSlide
+    );
 
     return (
-        <div className="editor">
+        <div className={styles.editor}>
             <Header title={presentation.title} />
             <Tools />
 
-            <div className="editor__workspace">
+            <div className={styles.main}>
                 <Slidebar slides={presentation.slides} />
                 <Workspace slide={currentSlide} />
             </div>
