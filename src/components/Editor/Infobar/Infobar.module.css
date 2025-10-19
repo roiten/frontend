@@ -1,0 +1,13 @@
+.infobar {
+    display: flex;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 40px;
+    background: #eeeeee;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    box-sizing: border-box;
+    font-size: 12px;
+}
