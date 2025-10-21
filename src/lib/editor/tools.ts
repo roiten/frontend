@@ -6,35 +6,37 @@ import { v4 as uuid } from 'uuid';
 export type Tool = {
     name: string;
     icon?: string;
-    action?: (...args: any[]) => void;
+    action?: (...args: never[]) => void;
 };
 
 export const saveTools: Tool[] = [
     { name: 'Сохранить', icon: '/icons/floppy-disk.svg' },
-    { name: 'в PDF', icon: '/icons/export.svg' },
-    { name: 'История', icon: '/icons/clock-counter-clockwise.svg' },
+    // { name: 'в PDF', icon: '/icons/export.svg' },
+    // { name: 'История', icon: '/icons/clock-counter-clockwise.svg' },
 ];
 
-export const editTools: Tool[] = [
-    {
-        name: 'Новый текст',
-        icon: '/icons/text-t.svg',
-        action: () => handleAddText(),
-    },
-    // {
-    //     name: 'Шрифт',
-    //     icon: '/icons/text-aa.svg',
-    //     // action: () => ,
-    // },
-    // { name: 'Стиль шрифта', icon: '/icons/text-b.svg' },
-    { name: 'Фон', icon: '/icons/wall.svg' },
-    { name: 'Вставить', icon: '/icons/clipboard-text.svg' },
-    { name: 'По образцу', icon: '/icons/paint-roller.svg' },
-    // { name: 'Фигура', icon: '/icons/shapes.svg' },
-    // { name: 'Таблица', icon: '/icons/grid-nine.svg' },
-    // { name: 'Список', icon: '/icons/list-bullets.svg' },
-    // { name: 'Отступы', icon: '/icons/text-indent.svg' },
-];
+export function createEditTools(
+    onToolAction?: (toolName: string) => void
+): Tool[] {
+    return [
+        {
+            name: 'Новый текст',
+            icon: '/icons/text-t.svg',
+            action: () => handleAddText(),
+        },
+        {
+            name: 'Фон',
+            icon: '/icons/wall.svg',
+            action: () => onToolAction?.('background'),
+        },
+        // { name: 'Вставить', icon: '/icons/clipboard-text.svg' },
+        // { name: 'По образцу', icon: '/icons/paint-roller.svg' },
+        // { name: 'Фигура', icon: '/icons/shapes.svg' },
+        // { name: 'Таблица', icon: '/icons/grid-nine.svg' },
+        // { name: 'Список', icon: '/icons/list-bullets.svg' },
+        // { name: 'Отступы', icon: '/icons/text-indent.svg' },
+    ];
+}
 
 export const slidebarTools: Tool[] = [
     {

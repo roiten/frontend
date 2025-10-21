@@ -153,6 +153,15 @@ export function maxTest(): Editor {
         size: { width: 530, height: 300 },
     };
 
+    const maxImage3: Image = {
+        id: 'image3',
+        type: 'image',
+        source: '/public/sun.png',
+        transparency: 1,
+        position: { x: 150, y: 100 },
+        size: { width: 800, height: 600 },
+    };
+
     maxSlide1 = addSlideObjectToSlide(maxSlide1, maxImage2);
     maxSlide1 = addSlideObjectToSlide(maxSlide1, maxText1);
 
@@ -164,6 +173,8 @@ export function maxTest(): Editor {
 
     maxSlide2 = addSlideObjectToSlide(maxSlide2, maxText2);
     maxSlide2 = addSlideObjectToSlide(maxSlide2, maxImage1);
+
+    maxSlide3 = addSlideObjectToSlide(maxSlide3, maxImage3);
 
     maxPresentation = addSlide(maxPresentation, maxSlide1);
     maxPresentation = addSlide(maxPresentation, maxSlide2);

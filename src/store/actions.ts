@@ -283,9 +283,15 @@ function setTextDescription(
     return { ...pres, slides, editedAt: new Date() };
 }
 
-// Изменение фона слайда
-function setSlideBackground(slide: Slide, Background: Background): Slide {
-    return { ...slide, background: Background };
+function setSlideBackground(
+    pres: Editor,
+    slideId: string,
+    background: Background
+): Editor {
+    const updatedSlides = pres.slides.map(slide =>
+        slide.id === slideId ? { ...slide, background: background } : slide
+    );
+    return { ...pres, slides: updatedSlides };
 }
 
 function chooseSlide(pres: Editor, slideId: string): Editor {

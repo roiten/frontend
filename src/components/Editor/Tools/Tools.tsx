@@ -1,18 +1,20 @@
 import styles from './Tools.module.css';
-import { editTools, saveTools } from '../../../lib/editor/tools.ts';
+import { createEditTools, saveTools } from '../../../lib/editor/tools.ts';
 import type { Tool } from '../../../lib/editor/tools.ts';
 import { handleEditFontSize } from '../../../lib/editor/handlers/handleEditFontSize.ts';
 import { handleEditFontColor } from '../../../lib/editor/handlers/handleEditFontColor.ts';
 import { handleEditFontFamily } from '../../../lib/editor/handlers/handleEditFontFamily.ts';
 
-const tools: Tool[] = [...saveTools, ...editTools];
-
 type ToolsProps = {
     selectedObjects: string[] | null;
+    onToolAction?: (toolName: string) => void;
 };
 
-export default function Tools({ selectedObjects }: ToolsProps) {
+export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
     const selectedObjectIds = selectedObjects || [];
+
+    const editTools = createEditTools(onToolAction);
+    const tools: Tool[] = [...saveTools, ...editTools];
 
     const handleToolChoose = (tool: string) => {
         console.log('выбран инструмент:', tool);

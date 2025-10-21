@@ -5,9 +5,9 @@
     flex-wrap: wrap;
     height: 60px;
     padding: 0 2vw;
-    background: #ffffff;
+    background: #fff;
     border-bottom: 1px solid #e4e4e4;
-    font-family: 'Inter', sans-serif;
+    font-family: Inter, sans-serif;
 }
 
 .left {

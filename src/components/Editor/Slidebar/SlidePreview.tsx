@@ -34,7 +34,11 @@ export default function SlidePreview({
         >
             <div
                 className={styles.scaledContainer}
-                style={{ transform: `scale(${scale})` }}
+                style={{
+                    transform: `scale(${scale})`,
+                    width: SLIDE_WIDTH,
+                    height: SLIDE_HEIGHT,
+                }}
             >
                 <div
                     className={styles.background}
@@ -43,8 +47,8 @@ export default function SlidePreview({
                             slide.background.type === 'color'
                                 ? slide.background.color
                                 : `url(${slide.background.source}) center/cover`,
-                        width: SLIDE_WIDTH,
-                        height: SLIDE_HEIGHT,
+                        width: '100%',
+                        height: '100%',
                     }}
                 />
 
@@ -53,6 +57,7 @@ export default function SlidePreview({
                         obj.type === 'text' ? (
                             <div
                                 key={obj.id}
+                                className={styles.textObject}
                                 style={{
                                     top: obj.position.y,
                                     left: obj.position.x,

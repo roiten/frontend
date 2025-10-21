@@ -13,7 +13,6 @@
     flex: 1 1 auto;
     flex-direction: row;
     justify-content: space-around;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow: auto hidden;
     padding-bottom: 30px;
 }
