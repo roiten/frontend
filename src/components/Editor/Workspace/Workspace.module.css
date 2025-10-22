@@ -28,3 +28,21 @@
 .slideObject {
     position: absolute;
 }
+
+.slideObject:focus {
+    outline: none;
+}
+
+.selectedObject {
+    box-shadow: 0 0 0 2px blue;
+}
+
+.nonSelectedObject {
+    box-shadow: none;
+}
+
+.picture {
+    width: 100%;
+    height: 100%;
+    display: block;
+}

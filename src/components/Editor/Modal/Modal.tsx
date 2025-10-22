@@ -5,8 +5,6 @@ type ModalProps = {
     onClose: () => void;
     title: string;
     children: React.ReactNode;
-    width?: number;
-    height?: number;
 };
 
 export default function Modal({

@@ -35,9 +35,9 @@ export default function SlidePreview({
             <div
                 className={styles.scaledContainer}
                 style={{
-                    transform: `scale(${scale})`,
-                    width: SLIDE_WIDTH,
-                    height: SLIDE_HEIGHT,
+                    width: SLIDE_WIDTH * scale,
+                    height: SLIDE_HEIGHT * scale,
+                    position: 'relative', // обязательно
                 }}
             >
                 <div
@@ -59,12 +59,13 @@ export default function SlidePreview({
                                 key={obj.id}
                                 className={styles.textObject}
                                 style={{
-                                    top: obj.position.y,
-                                    left: obj.position.x,
-                                    width: obj.size.width,
-                                    height: obj.size.height,
+                                    position: 'absolute',
+                                    top: obj.position.y * scale,
+                                    left: obj.position.x * scale,
+                                    width: obj.size.width * scale,
+                                    height: obj.size.height * scale,
                                     color: obj.font.color,
-                                    fontSize: obj.font.size,
+                                    fontSize: obj.font.size * scale,
                                     textDecoration: obj.font.textDecoration,
                                     fontFamily: obj.font.family,
                                 }}
@@ -77,10 +78,11 @@ export default function SlidePreview({
                                 src={obj.source}
                                 alt=""
                                 style={{
-                                    top: obj.position.y,
-                                    left: obj.position.x,
-                                    width: obj.size.width,
-                                    height: obj.size.height,
+                                    position: 'absolute',
+                                    top: obj.position.y * scale,
+                                    left: obj.position.x * scale,
+                                    width: obj.size.width * scale,
+                                    height: obj.size.height * scale,
                                     opacity: obj.transparency,
                                 }}
                             />
@@ -88,6 +90,7 @@ export default function SlidePreview({
                     )}
                 </div>
             </div>
+
 
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>

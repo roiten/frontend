@@ -1,7 +1,7 @@
 import type { Slide, SlideObject } from '../../../store/types.ts';
 import styles from './Workspace.module.css';
-import SlideTextObject from './SlideTextObject.tsx';
-import SlideImageObject from './SlideImageObject.tsx';
+import SlideTextObject from './SlideObject/SlideTextObject.tsx';
+import SlideImageObject from './SlideObject/SlideImageObject.tsx';
 
 type Props = {
     slide: Slide | undefined;
@@ -21,7 +21,18 @@ export default function Workspace({
     const isSelected = (objectId: string) =>
         selectedObjects?.includes(objectId) || false;
 
-    if (!slide)
+  const handleSelectObject = (objectId: string) => {
+    const isCurrentlySelected = isSelected(objectId);
+    if (onSelectObject) onSelectObject(objectId, !isCurrentlySelected);
+  };
+
+  const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.target === e.currentTarget && onClearSelection) {
+      onClearSelection();
+    }
+  };
+
+  if (!slide)
         return <div className={styles.wrapper}>Нет выбранного слайда</div>;
 
     const backgroundStyle =
@@ -32,17 +43,6 @@ export default function Workspace({
                   backgroundSize: 'cover',
                   backgroundPosition: 'center',
               };
-
-    const handleSelectObject = (objectId: string) => {
-        const isCurrentlySelected = isSelected(objectId);
-        if (onSelectObject) onSelectObject(objectId, !isCurrentlySelected);
-    };
-
-    const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
-        if (e.target === e.currentTarget && onClearSelection) {
-            onClearSelection();
-        }
-    };
 
     return (
         <div className={styles.wrapper}>
@@ -56,14 +56,13 @@ export default function Workspace({
                     onClick={handleWorkspaceClick}
                 >
                     {slide.content.map((obj: SlideObject) => {
-                        // const isObjSelected = isSelected(obj.id);
                         if (obj.type === 'text') {
                             return (
                                 <SlideTextObject
                                     obj={obj}
                                     slideId={slide.id}
                                     key={obj.id}
-                                    // isSelected={isObjSelected}
+                                    isSelected={isSelected(obj.id)}
                                     onClick={() => handleSelectObject(obj.id)}
                                 />
                             );
@@ -72,7 +71,8 @@ export default function Workspace({
                                 <SlideImageObject
                                     obj={obj}
                                     key={obj.id}
-                                    // isSelected={isObjSelected}
+                                    slideId={slide.id}
+                                    isSelected={isSelected(obj.id)}
                                     onClick={() => handleSelectObject(obj.id)}
                                 />
                             );

@@ -1,84 +1,4 @@
-// Презентация
-type Editor = {
-    title: string;
-    slides: Slide[];
-    currentSlide: string | null;
-    selectedObjects: string[] | null;
-    author: string;
-    createdAt: Date;
-    editedAt: Date;
-};
-
-// Слайд
-type Slide = {
-    slide: Slide;
-    id: string;
-    background: Background;
-    content: SlideObject[];
-};
-
-// задний фон
-type Background = Color | Picture;
-
-type Color = {
-    type: 'color';
-    color: string;
-};
-
-type Picture = {
-    type: 'picture';
-    source: string;
-    transparency: number;
-};
-
-// Объект слайда
-type SlideObject = Text | Image;
-
-// базовый объект слайда
-type BaseObject = {
-    id: string;
-    transparency: number;
-
-    position: {
-        x: number;
-        y: number;
-    };
-
-    size: {
-        width: number;
-        height: number;
-    };
-};
-
-// текст
-type Text = BaseObject & {
-    description: string;
-    type: 'text';
-    font: {
-        family: string;
-        color: string;
-        size: number;
-        weight: number;
-        textDecoration: 'strikethrough' | 'underline' | 'none';
-        textAlign: 'left' | 'center' | 'right' | 'justify';
-    };
-};
-
-// изображение
-type Image = BaseObject & {
-    source: string;
-    type: 'image';
-};
-
-// * изменение названия презентации ?
-// * добавление/удаление слайда ?
-// * изменение позиции слайда
-// * добавление/удаление текста и картинки +
-// * изменение позиции текста/картинки ?
-// * изменение объекта (картинки) +
-// * изменение текста +
-// * изменение семейства шрифтов у текста +
-// * изменение фона слайда +
+import type { Editor, Slide, SlideObject, Background } from './types';
 
 // Изменение названия презентации
 function setPresentationTitle(pres: Editor, newTitle: string): Editor {
@@ -131,12 +51,25 @@ function addSlideObject(
     return { ...pres, slides, editedAt: new Date() };
 }
 
+function removeSlideObjectToSlide(slide: Slide, objectId: string): Slide {
+  return {
+    ...slide,
+    content: slide.content.filter(obj => obj.id !== objectId),
+  };
+}
+
 // Удаление объекта
-function removeSlideObject(slide: Slide, objectId: string): Slide {
-    return {
-        ...slide,
-        content: slide.content.filter(obj => obj.id !== objectId),
-    };
+function removeSlideObject(pres: Editor, slideId: string, objectId: string): Editor {
+  let necessarySlide = pres.slides.find(s => s.id === slideId);
+  if (!necessarySlide) {
+    return pres;
+  }
+  necessarySlide = removeSlideObjectToSlide(necessarySlide, objectId);
+  const slides = pres.slides.map(slide => {
+    if (slide.id === slideId) return necessarySlide;
+    return slide;
+  });
+  return { ...pres, slides, editedAt: new Date() };
 }
 
 // Изменение текста или картинки

@@ -11,7 +11,6 @@ type Editor = {
 
 // Слайд
 type Slide = {
-    slide: Slide;
     id: string;
     background: Background;
     content: SlideObject[];
@@ -69,6 +68,9 @@ type Image = BaseObject & {
     source: string;
     type: 'image';
 };
+
+type ModalType = "background-color" | "image-url" | null;
+
 
 // * изменение названия презентации ?
 // * добавление/удаление слайда ?
@@ -354,4 +356,4 @@ export {
     clearSelectedObjects,
 };
 
-export type { Editor, Image, Text, Slide, SlideObject, Background };
+export type { Editor, Image, Text, Slide, SlideObject, Background, ModalType };

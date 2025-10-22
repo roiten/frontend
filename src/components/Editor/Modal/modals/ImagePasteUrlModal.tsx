@@ -1,20 +1,19 @@
 import styles from './IslandModal.module.css';
 import {
-    handleEditSlideBackgroundColor,
-    handleEditSlideBackgroundImage,
-} from '../../../../lib/editor/handlers/handleEditSlideBackground';
+  handlePasteImageUrl,
+} from '../../../../lib/editor/handlers/handlePasteImage';
 
-type BackgroundModalProps = {
+type ImagePasteUrlModalProps = {
     slideId: string | null;
     onClose: () => void;
 };
 
-export default function BackgroundModal({
+export default function ImagePasteUrlModal({
     slideId,
     onClose,
-}: BackgroundModalProps) {
+}: ImagePasteUrlModalProps) {
     function handleApply() {
-        console.log('Apply bg: to slide:', slideId);
+        console.log('Pasted image by url to slide:', slideId);
         onClose();
     }
 
@@ -22,20 +21,11 @@ export default function BackgroundModal({
         <div>
             <div className={styles.content}>
                 <div className={styles.row}>
-                    <span>Цвет:</span>
-                    <input
-                        type="color"
-                        onChange={e =>
-                            handleEditSlideBackgroundColor(e.target.value)
-                        }
-                    />
-                </div>
-                <div className={styles.row}>
                     <span>URL изображения:</span>
                     <input
                         type="url"
                         onChange={e =>
-                            handleEditSlideBackgroundImage(e.target.value)
+                          handlePasteImageUrl(e.target.value)
                         }
                     />
                 </div>

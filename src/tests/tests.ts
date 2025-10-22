@@ -1,60 +1,10 @@
 import {
     addSlide,
-    addSlideObject,
     setSlideBackground,
     addSlideObjectToSlide,
-} from '../store/types.ts';
+} from '../store/actions.ts';
 
 import type { Editor, Image, Text, Slide } from '../store/types.ts';
-
-export function minimalTest(): Editor {
-    let minimalPresentation: Editor = {
-        title: '',
-        slides: [],
-        currentSlide: null,
-        author: '',
-        createdAt: new Date(),
-        editedAt: new Date(),
-    };
-
-    let minimalSlide: Slide = {
-        id: 'slide1',
-        content: [],
-        background: { type: 'color', color: '' },
-    };
-
-    const minimalText: Text = {
-        id: 'text1',
-        type: 'text',
-        description: '',
-        position: { x: 0, y: 0 },
-        size: { width: 0, height: 0 },
-        transparency: 0,
-        font: {
-            family: '',
-            color: '',
-            size: 0,
-            weight: 0,
-            textDecoration: 'none',
-            textAlign: 'left',
-        },
-    };
-
-    const minimalImage: Image = {
-        id: 'image1',
-        type: 'image',
-        source: '',
-        transparency: 0,
-        position: { x: 0, y: 0 },
-        size: { width: 0, height: 0 },
-    };
-
-    minimalSlide = addSlideObject(minimalSlide, minimalText);
-    minimalSlide = addSlideObject(minimalSlide, minimalImage);
-
-    minimalPresentation = addSlide(minimalPresentation, minimalSlide);
-    return minimalPresentation;
-}
 
 export function maxTest(): Editor {
     let maxPresentation: Editor = {
@@ -165,15 +115,8 @@ export function maxTest(): Editor {
     maxSlide1 = addSlideObjectToSlide(maxSlide1, maxImage2);
     maxSlide1 = addSlideObjectToSlide(maxSlide1, maxText1);
 
-    maxSlide1 = setSlideBackground(maxSlide1, {
-        type: 'picture',
-        source: 'https://wallpapers.com/images/hd/4k-fall-hjtjbjpx534rzbsd.jpg',
-        transparency: 1,
-    });
-
     maxSlide2 = addSlideObjectToSlide(maxSlide2, maxText2);
     maxSlide2 = addSlideObjectToSlide(maxSlide2, maxImage1);
-
     maxSlide3 = addSlideObjectToSlide(maxSlide3, maxImage3);
 
     maxPresentation = addSlide(maxPresentation, maxSlide1);
@@ -182,32 +125,12 @@ export function maxTest(): Editor {
     maxPresentation = addSlide(maxPresentation, maxSlide4);
     maxPresentation = addSlide(maxPresentation, maxSlide5);
 
+  maxPresentation = setSlideBackground(maxPresentation, 'slide1', {
+    type: 'picture',
+    source: 'https://wallpapers.com/images/hd/4k-fall-hjtjbjpx534rzbsd.jpg',
+    transparency: 1,
+  });
+
     return maxPresentation;
 }
-// console.log('max presentation', maxPresentation);
-//
-// console.log(setPresentationTitle(maxPresentation, 'Заголовок'));
-//
-// console.log(addSlide(maxPresentation, maxSlide1));
-//
-// console.log(removeSlide(maxPresentation, 'slide2'));
-//
-// console.log(moveSlide(maxPresentation, 'slide2', 0));
-//
-// console.log(addSlideObject(maxSlide1, maxImage2));
-//
-// console.log(removeSlideObject(maxSlide1, 'image2'));
-//
-// console.log(editObject(maxImage1, 'new_image.png'));
-//
-// console.log(setObjectPositionCoordinates(maxImage1, { x: 100, y: 200 }));
-//
-// console.log(setObjectPositionSize(maxImage2, { width: 500, height: 500 }));
-//
-// console.log(setTextSize(maxSlide1, 'text1', 36));
-//
-// console.log(setTextFont(maxSlide1, 'text1', 'Courier'));
-//
-// console.log(setTextDescription(maxSlide1, 'text1', 'New Description'));
-//
-// console.log(setSlideBackground(maxSlide1, { type: 'picture', source: 'bg2.png', transparency: 0.8 }));
+
