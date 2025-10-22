@@ -1,9 +1,9 @@
-import styles from './Tools.module.css';
-import { createEditTools, saveTools } from '../../../lib/editor/tools.ts';
-import type { Tool } from '../../../lib/editor/tools.ts';
-import { handleEditFontSize } from '../../../lib/editor/handlers/handleEditFontSize.ts';
-import { handleEditFontColor } from '../../../lib/editor/handlers/handleEditFontColor.ts';
-import { handleEditFontFamily } from '../../../lib/editor/handlers/handleEditFontFamily.ts';
+import styles from "./Tools.module.css";
+import { createEditTools, saveTools } from "../../../lib/editor/tools.ts";
+import type { Tool } from "../../../lib/editor/tools.ts";
+import { handleEditFontSize } from "../../../lib/editor/handlers/handleEditFontSize.ts";
+import { handleEditFontColor } from "../../../lib/editor/handlers/handleEditFontColor.ts";
+import { handleEditFontFamily } from "../../../lib/editor/handlers/handleEditFontFamily.ts";
 
 type ToolsProps = {
     selectedObjects: string[] | null;
@@ -17,7 +17,7 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
     const tools: Tool[] = [...saveTools, ...editTools];
 
     const handleToolChoose = (tool: string) => {
-        console.log('выбран инструмент:', tool);
+        console.log("выбран инструмент:", tool);
     };
 
     const hasSelection = selectedObjectIds.length > 0;
@@ -49,7 +49,7 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
                     name="font"
                     id="fontSelect"
                     disabled={!hasSelection}
-                    onChange={e => {
+                    onChange={(e) => {
                         const fontFamily = e.currentTarget.value;
                         if (hasSelection) {
                             handleEditFontFamily(selectedObjectIds, fontFamily);
@@ -67,7 +67,7 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
             <input
                 type="number"
                 disabled={!hasSelection}
-                onChange={e => {
+                onChange={(e) => {
                     const value = Number(e.currentTarget.value);
                     if (hasSelection) {
                         handleEditFontSize(selectedObjectIds, value);
@@ -78,7 +78,7 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
             <input
                 type="color"
                 disabled={!hasSelection}
-                onChange={e => {
+                onChange={(e) => {
                     const value = e.currentTarget.value;
                     if (hasSelection) {
                         handleEditFontColor(selectedObjectIds, value);

@@ -1,4 +1,4 @@
-import styles from './Modal.module.css';
+import styles from "./Modal.module.css";
 
 type ModalProps = {
     isOpen: boolean;
@@ -12,7 +12,6 @@ export default function Modal({
     onClose,
     title,
     children,
-
 }: ModalProps) {
     if (!isOpen) return null;
 
@@ -20,7 +19,7 @@ export default function Modal({
         <div className={styles.modal} onClick={onClose}>
             <div
                 className={styles.modalContent}
-                onClick={e => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
             >
                 <div className={styles.modalHeader}>
                     <span className={styles.modalTitle}>{title}</span>

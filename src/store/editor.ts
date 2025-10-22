@@ -1,5 +1,5 @@
-import type { Editor } from './types.ts';
-import { maxTest } from '../tests/tests.ts';
+import type { Editor } from "./types.ts";
+import { maxTest } from "../tests/tests.ts";
 
 let editor: Editor = maxTest();
 let editorChangeHandler: ((editor: Editor) => void) | null = null;
@@ -23,6 +23,5 @@ function dispatch(modifyFn: any, ...args: any[]) {
         editorChangeHandler(newEditor);
     }
 }
-
 
 export { getEditor, setEditor, addEditorChangeHandler, dispatch };

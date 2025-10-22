@@ -1,4 +1,4 @@
-import styles from './Infobar.module.css';
+import styles from "./Infobar.module.css";
 
 type Props = {
     author: string;

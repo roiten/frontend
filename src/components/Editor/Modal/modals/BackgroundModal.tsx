@@ -1,8 +1,8 @@
-import styles from './IslandModal.module.css';
+import styles from "./IslandModal.module.css";
 import {
     handleEditSlideBackgroundColor,
     handleEditSlideBackgroundImage,
-} from '../../../../lib/editor/handlers/handleEditSlideBackground';
+} from "../../../../lib/editor/handlers/handleEditSlideBackground";
 
 type BackgroundModalProps = {
     slideId: string | null;
@@ -14,7 +14,7 @@ export default function BackgroundModal({
     onClose,
 }: BackgroundModalProps) {
     function handleApply() {
-        console.log('Apply bg: to slide:', slideId);
+        console.log("Apply bg: to slide:", slideId);
         onClose();
     }
 
@@ -25,7 +25,7 @@ export default function BackgroundModal({
                     <span>Цвет:</span>
                     <input
                         type="color"
-                        onChange={e =>
+                        onChange={(e) =>
                             handleEditSlideBackgroundColor(e.target.value)
                         }
                     />
@@ -34,15 +34,19 @@ export default function BackgroundModal({
                     <span>URL изображения:</span>
                     <input
                         type="url"
-                        onChange={e =>
+                        onChange={(e) =>
                             handleEditSlideBackgroundImage(e.target.value)
                         }
                     />
                 </div>
             </div>
             <div className={styles.controlButtons}>
-                <span className={styles.tool} onClick={handleApply}>Применить</span>
-                <span className={styles.tool} onClick={onClose}>Отмена</span>
+                <span className={styles.tool} onClick={handleApply}>
+                    Применить
+                </span>
+                <span className={styles.tool} onClick={onClose}>
+                    Отмена
+                </span>
             </div>
         </div>
     );

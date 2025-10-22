@@ -1,4 +1,4 @@
-import { dispatch, getEditor } from '../../../store/editor.ts';
+import { dispatch, getEditor } from "../../../store/editor.ts";
 import { addSlideObject } from "../../../store/actions.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 
@@ -7,13 +7,13 @@ function handlePasteImageUrl(url: string) {
     const slideId = editor.currentSlide;
     if (!slideId) return;
 
-    const slide = editor.slides.find(s => s.id === slideId);
+    const slide = editor.slides.find((s) => s.id === slideId);
     if (!slide) return;
 
-    console.log('New image url: ', url);
+    console.log("New image url: ", url);
     dispatch(addSlideObject, slideId, {
         source: url,
-        ...IMAGE_PRESETS
+        ...IMAGE_PRESETS,
     });
 }
 

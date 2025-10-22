@@ -1,9 +1,9 @@
-import { type Slide } from '../../../store/types.ts';
-import { slidebarTools } from '../../../lib/editor/tools.ts';
-import SlidePreview from './SlidePreview.tsx';
-import styles from './Slidebar.module.css';
-import { dispatch } from '../../../store/editor';
-import { chooseSlide } from '../../../store/actions.ts';
+import { type Slide } from "../../../store/types.ts";
+import { slidebarTools } from "../../../lib/editor/tools.ts";
+import SlidePreview from "./SlidePreview.tsx";
+import styles from "./Slidebar.module.css";
+import { dispatch } from "../../../store/editor";
+import { chooseSlide } from "../../../store/actions.ts";
 
 type Props = {
     slides: Slide[];
@@ -19,7 +19,7 @@ export default function Slidebar({ slides, currentSlideId }: Props) {
     return (
         <div className={styles.slidebar}>
             <div className={styles.slidebarTools}>
-                {slidebarTools.map(tool => (
+                {slidebarTools.map((tool) => (
                     <span
                         key={tool.name}
                         className={styles.slidebarTool}

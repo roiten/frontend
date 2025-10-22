@@ -1,6 +1,6 @@
-import styles from './Header.module.css';
-import joinStyles from '../../../lib/utils/joinStyle.ts';
-import * as React from 'react';
+import styles from "./Header.module.css";
+import joinStyles from "../../../lib/utils/joinStyle.ts";
+import * as React from "react";
 
 type Props = {
     title: string;
@@ -8,14 +8,14 @@ type Props = {
 
 export default function Header({ title }: Props) {
     const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log('новое название:', event.target.value);
+        console.log("новое название:", event.target.value);
     };
 
     return (
         <div className={styles.header}>
             <img
-                src={'./icons/siteIcon.png'}
-                alt={'логотип слайдмейкера'}
+                src={"./icons/siteIcon.png"}
+                alt={"логотип слайдмейкера"}
                 className={joinStyles([styles.siteLogo, styles.left])}
             />
 

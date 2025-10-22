@@ -1,11 +1,11 @@
-import type { Slide } from '../../../store/types.ts';
-import styles from './Slidebar.module.css';
+import type { Slide } from "../../../store/types.ts";
+import styles from "./Slidebar.module.css";
 import {
     PREVIEW_WIDTH,
     SLIDE_HEIGHT,
     SLIDE_WIDTH,
-} from '../../../store/default.ts';
-import joinStyles from '../../../lib/utils/joinStyle.ts';
+} from "../../../store/default.ts";
+import joinStyles from "../../../lib/utils/joinStyle.ts";
 
 type Props = {
     slide: Slide;
@@ -37,29 +37,29 @@ export default function SlidePreview({
                 style={{
                     width: SLIDE_WIDTH * scale,
                     height: SLIDE_HEIGHT * scale,
-                    position: 'relative', // обязательно
+                    position: "relative", // обязательно
                 }}
             >
                 <div
                     className={styles.background}
                     style={{
                         background:
-                            slide.background.type === 'color'
+                            slide.background.type === "color"
                                 ? slide.background.color
                                 : `url(${slide.background.source}) center/cover`,
-                        width: '100%',
-                        height: '100%',
+                        width: "100%",
+                        height: "100%",
                     }}
                 />
 
                 <div className={styles.thumbnailContent}>
-                    {slide.content.map(obj =>
-                        obj.type === 'text' ? (
+                    {slide.content.map((obj) =>
+                        obj.type === "text" ? (
                             <div
                                 key={obj.id}
                                 className={styles.textObject}
                                 style={{
-                                    position: 'absolute',
+                                    position: "absolute",
                                     top: obj.position.y * scale,
                                     left: obj.position.x * scale,
                                     width: obj.size.width * scale,
@@ -78,7 +78,7 @@ export default function SlidePreview({
                                 src={obj.source}
                                 alt=""
                                 style={{
-                                    position: 'absolute',
+                                    position: "absolute",
                                     top: obj.position.y * scale,
                                     left: obj.position.x * scale,
                                     width: obj.size.width * scale,
@@ -86,11 +86,10 @@ export default function SlidePreview({
                                     opacity: obj.transparency,
                                 }}
                             />
-                        )
+                        ),
                     )}
                 </div>
             </div>
-
 
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>

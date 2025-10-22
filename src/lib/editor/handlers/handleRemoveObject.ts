@@ -1,4 +1,4 @@
-import { dispatch, getEditor } from '../../../store/editor.ts';
+import { dispatch, getEditor } from "../../../store/editor.ts";
 import { removeSlideObject } from "../../../store/actions.ts";
 
 function handleRemoveObject(objectId: string) {
@@ -6,10 +6,10 @@ function handleRemoveObject(objectId: string) {
     const slideId = editor.currentSlide;
     if (!slideId) return;
 
-    const slide = editor.slides.find(s => s.id === slideId);
+    const slide = editor.slides.find((s) => s.id === slideId);
     if (!slide) return;
 
-    console.log('Removed: ', objectId);
+    console.log("Removed: ", objectId);
     dispatch(removeSlideObject, slideId, objectId);
 }
 

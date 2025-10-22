@@ -1,4 +1,4 @@
-import type { Editor, Slide, SlideObject, Background } from './types';
+import type { Editor, Slide, SlideObject, Background } from "./types";
 
 // Изменение названия презентации
 function setPresentationTitle(pres: Editor, newTitle: string): Editor {
@@ -13,14 +13,14 @@ function addSlide(pres: Editor, slide: Slide): Editor {
 
 // Удаление слайда
 function removeSlide(pres: Editor, slideId: string): Editor {
-    const otherSlides = pres.slides.filter(s => s.id !== slideId);
+    const otherSlides = pres.slides.filter((s) => s.id !== slideId);
     return { ...pres, slides: otherSlides, editedAt: new Date() };
 }
 
 // Изменение позиции слайда
 function moveSlide(pres: Editor, slideId: string, newIndex: number): Editor {
     const slides = [...pres.slides];
-    const oldIndex = slides.findIndex(s => s.id === slideId);
+    const oldIndex = slides.findIndex((s) => s.id === slideId);
     if (oldIndex === -1) return pres;
 
     const [slide] = slides.splice(oldIndex, 1);
@@ -37,14 +37,14 @@ function addSlideObjectToSlide(slide: Slide, obj: SlideObject): Slide {
 function addSlideObject(
     pres: Editor,
     slideId: string,
-    obj: SlideObject
+    obj: SlideObject,
 ): Editor {
-    let necessarySlide = pres.slides.find(s => s.id === slideId);
+    let necessarySlide = pres.slides.find((s) => s.id === slideId);
     if (!necessarySlide) {
         return pres;
     }
     necessarySlide = addSlideObjectToSlide(necessarySlide, obj);
-    const slides = pres.slides.map(slide => {
+    const slides = pres.slides.map((slide) => {
         if (slide.id === slideId) return necessarySlide;
         return slide;
     });
@@ -52,31 +52,35 @@ function addSlideObject(
 }
 
 function removeSlideObjectToSlide(slide: Slide, objectId: string): Slide {
-  return {
-    ...slide,
-    content: slide.content.filter(obj => obj.id !== objectId),
-  };
+    return {
+        ...slide,
+        content: slide.content.filter((obj) => obj.id !== objectId),
+    };
 }
 
 // Удаление объекта
-function removeSlideObject(pres: Editor, slideId: string, objectId: string): Editor {
-  let necessarySlide = pres.slides.find(s => s.id === slideId);
-  if (!necessarySlide) {
-    return pres;
-  }
-  necessarySlide = removeSlideObjectToSlide(necessarySlide, objectId);
-  const slides = pres.slides.map(slide => {
-    if (slide.id === slideId) return necessarySlide;
-    return slide;
-  });
-  return { ...pres, slides, editedAt: new Date() };
+function removeSlideObject(
+    pres: Editor,
+    slideId: string,
+    objectId: string,
+): Editor {
+    let necessarySlide = pres.slides.find((s) => s.id === slideId);
+    if (!necessarySlide) {
+        return pres;
+    }
+    necessarySlide = removeSlideObjectToSlide(necessarySlide, objectId);
+    const slides = pres.slides.map((slide) => {
+        if (slide.id === slideId) return necessarySlide;
+        return slide;
+    });
+    return { ...pres, slides, editedAt: new Date() };
 }
 
 // Изменение текста или картинки
 function editObject(obj: SlideObject, src: string): SlideObject {
-    if (obj.type === 'text') {
+    if (obj.type === "text") {
         return { ...obj, description: src };
-    } else if (obj.type === 'image') {
+    } else if (obj.type === "image") {
         return { ...obj, source: src };
     }
     return obj;
@@ -85,7 +89,7 @@ function editObject(obj: SlideObject, src: string): SlideObject {
 // изменение позиции объекта
 function setObjectPositionCoordinates(
     slideObject: SlideObject,
-    position: { x: number; y: number }
+    position: { x: number; y: number },
 ): SlideObject {
     return {
         ...slideObject,
@@ -96,7 +100,7 @@ function setObjectPositionCoordinates(
 // изменение размера объекта
 function setObjectPositionSize(
     slideObject: SlideObject,
-    size: { width: number; height: number }
+    size: { width: number; height: number },
 ): SlideObject {
     return {
         ...slideObject,
@@ -106,10 +110,10 @@ function setObjectPositionSize(
 
 // Изменение размера шрифта для текста
 function setTextSizeToSlide(slide: Slide, textId: string, size: number): Slide {
-    const content = slide.content.map(obj =>
-        obj.type === 'text' && obj.id === textId
+    const content = slide.content.map((obj) =>
+        obj.type === "text" && obj.id === textId
             ? { ...obj, font: { ...obj.font, size } }
-            : obj
+            : obj,
     );
     return { ...slide, content };
 }
@@ -119,14 +123,14 @@ function setTextSize(
     pres: Editor,
     slideId: string,
     textId: string,
-    size: number
+    size: number,
 ): Editor {
-    let necessarySlide = pres.slides.find(s => s.id === slideId);
+    let necessarySlide = pres.slides.find((s) => s.id === slideId);
     if (!necessarySlide) {
         return pres;
     }
     necessarySlide = setTextSizeToSlide(necessarySlide, textId, size);
-    const slides = pres.slides.map(slide => {
+    const slides = pres.slides.map((slide) => {
         if (slide.id === slideId) return necessarySlide;
         return slide;
     });
@@ -137,12 +141,12 @@ function setTextSize(
 function setTextFontToSlide(
     slide: Slide,
     textId: string,
-    family: string
+    family: string,
 ): Slide {
-    const content = slide.content.map(obj =>
-        obj.type === 'text' && obj.id === textId
+    const content = slide.content.map((obj) =>
+        obj.type === "text" && obj.id === textId
             ? { ...obj, font: { ...obj.font, family } }
-            : obj
+            : obj,
     );
     return { ...slide, content };
 }
@@ -151,14 +155,14 @@ function setFontFamily(
     pres: Editor,
     slideId: string,
     textId: string,
-    family: string
+    family: string,
 ): Editor {
-    let necessarySlide = pres.slides.find(s => s.id === slideId);
+    let necessarySlide = pres.slides.find((s) => s.id === slideId);
     if (!necessarySlide) {
         return pres;
     }
     necessarySlide = setTextFontToSlide(necessarySlide, textId, family);
-    const slides = pres.slides.map(slide => {
+    const slides = pres.slides.map((slide) => {
         if (slide.id === slideId) return necessarySlide;
         return slide;
     });
@@ -168,12 +172,12 @@ function setFontFamily(
 function setTextColorToSlide(
     slide: Slide,
     textId: string,
-    color: string
+    color: string,
 ): Slide {
-    const content = slide.content.map(obj =>
-        obj.type === 'text' && obj.id === textId
+    const content = slide.content.map((obj) =>
+        obj.type === "text" && obj.id === textId
             ? { ...obj, font: { ...obj.font, color } }
-            : obj
+            : obj,
     );
     return { ...slide, content };
 }
@@ -182,14 +186,14 @@ function setTextColor(
     pres: Editor,
     slideId: string,
     textId: string,
-    color: string
+    color: string,
 ): Editor {
-    let necessarySlide = pres.slides.find(s => s.id === slideId);
+    let necessarySlide = pres.slides.find((s) => s.id === slideId);
     if (!necessarySlide) {
         return pres;
     }
     necessarySlide = setTextColorToSlide(necessarySlide, textId, color);
-    const slides = pres.slides.map(slide => {
+    const slides = pres.slides.map((slide) => {
         if (slide.id === slideId) return necessarySlide;
         return slide;
     });
@@ -199,16 +203,16 @@ function setTextColor(
 // изменение текста
 function setTextDescription(
     pres: Editor,
-    payload: { slideId: string; textId: string; description: string }
+    payload: { slideId: string; textId: string; description: string },
 ): Editor {
     const { slideId, textId, description } = payload;
 
-    const slides = pres.slides.map(slide => {
+    const slides = pres.slides.map((slide) => {
         if (slide.id !== slideId) return slide;
-        const content = slide.content.map(obj =>
-            obj.type === 'text' && obj.id === textId
+        const content = slide.content.map((obj) =>
+            obj.type === "text" && obj.id === textId
                 ? { ...obj, description }
-                : obj
+                : obj,
         );
         return { ...slide, content };
     });
@@ -219,16 +223,16 @@ function setTextDescription(
 function setSlideBackground(
     pres: Editor,
     slideId: string,
-    background: Background
+    background: Background,
 ): Editor {
-    const updatedSlides = pres.slides.map(slide =>
-        slide.id === slideId ? { ...slide, background: background } : slide
+    const updatedSlides = pres.slides.map((slide) =>
+        slide.id === slideId ? { ...slide, background: background } : slide,
     );
     return { ...pres, slides: updatedSlides };
 }
 
 function chooseSlide(pres: Editor, slideId: string): Editor {
-    const slideExists = pres.slides.some(slide => slide.id === slideId);
+    const slideExists = pres.slides.some((slide) => slide.id === slideId);
     if (slideExists) {
         return { ...pres, currentSlide: slideId };
     }
@@ -257,7 +261,7 @@ function addSelectedObject(pres: Editor, objectId: string): Editor {
 function removeSelectedObject(pres: Editor, objectId: string): Editor {
     const current = pres.selectedObjects;
     if (!current) return pres;
-    const newSelection = current.filter(id => id !== objectId);
+    const newSelection = current.filter((id) => id !== objectId);
     return {
         ...pres,
         selectedObjects: newSelection.length > 0 ? newSelection : null,
