@@ -37,7 +37,6 @@ export default function SlidePreview({
                 style={{
                     width: SLIDE_WIDTH * scale,
                     height: SLIDE_HEIGHT * scale,
-                    position: "relative", // обязательно
                 }}
             >
                 <div

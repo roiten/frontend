@@ -97,10 +97,10 @@ export function maxTest(): Editor {
     const maxImage2: Image = {
         id: "image2",
         type: "image",
-        source: "https://habrastorage.org/webt/fr/d5/en/frd5enzjfyfdksaoaema1gvnpva.png",
-        transparency: 0.5,
+        source: "https://camo.githubusercontent.com/eb4f1923b00f70cd17bcaaf58d9d471da89d46a584e1cd6a18e915fe7e1fd29b/68747470733a2f2f75706c6f61642e77696b696d656469612e6f72672f77696b6970656469612f636f6d6d6f6e732f332f33302f52656475785f4c6f676f2e706e67",
+        transparency: 1,
         position: { x: 50, y: 50 },
-        size: { width: 530, height: 300 },
+        size: { width: 850, height: 300 },
     };
 
     const maxImage3: Image = {

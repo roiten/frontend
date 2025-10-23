@@ -1,6 +1,6 @@
 import styles from "../Workspace.module.css";
 import { type Image } from "../../../../store/types.ts";
-import { removeSlideObject } from "../../../../store/actions.ts"; // ← из actions!
+import { removeSlideObject } from "../../../../store/actions.ts";
 import { type JSX } from "react";
 import joinStyles from "../../../../lib/utils/joinStyle.ts";
 import * as React from "react";
@@ -47,11 +47,6 @@ export default function SlideImageObject({
                 className={styles.picture}
                 src={obj.source}
                 alt="Картинка на слайде"
-                style={{
-                    width: "100%",
-                    height: "100%",
-                    display: "block",
-                }}
             />
         </div>
     );
