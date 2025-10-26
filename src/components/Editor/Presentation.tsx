@@ -14,7 +14,7 @@ import ImagePasteUrlModal from "./Modal/modals/ImagePasteUrlModal.tsx";
 import {
     handleClearSelection,
     handleSelectObject,
-} from "../../lib/editor/handlers/handleSelectObject.ts";
+} from "./Workspace/handlers/handleSelectObject.ts";
 
 type PresentationProps = {
     editor: Editor;
@@ -50,7 +50,7 @@ export default function Presentation({
                 openModal("image-url");
                 break;
             default:
-                console.log("Tool action:", toolName);
+                console.log("Выбран инструмент:", toolName, "действие не назначено");
         }
     }
 

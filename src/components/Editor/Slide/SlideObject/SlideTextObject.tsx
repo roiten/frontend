@@ -1,4 +1,4 @@
-import styles from "../Workspace.module.css";
+import styles from "../../Workspace/Workspace.module.css";
 import { dispatch } from "../../../../store/editor.ts";
 import {
     removeSlideObject,
@@ -6,7 +6,7 @@ import {
 } from "../../../../store/actions.ts";
 import type { Text } from "../../../../store/types.ts";
 import { useState, type JSX } from "react";
-import joinStyles from "../../../../lib/utils/joinStyle.ts";
+import joinStyles from "../../../../utils/joinStyle.ts";
 
 type Props = {
     obj: Text;

@@ -1,5 +1,5 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { setTextSize } from "../../../store/types.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { setTextSize } from "../../../../store/actions.ts";
 
 function handleEditFontSize(textIds: string[], size: number) {
     const editor = getEditor();

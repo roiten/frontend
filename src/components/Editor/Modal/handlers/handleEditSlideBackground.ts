@@ -1,5 +1,5 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { setSlideBackground } from "../../../store/actions.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { setSlideBackground } from "../../../../store/actions.ts";
 
 function handleEditSlideBackgroundColor(color: string) {
     const editor = getEditor();

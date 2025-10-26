@@ -1,5 +1,5 @@
 import styles from "./IslandModal.module.css";
-import { handlePasteImageUrl } from "../../../../lib/editor/handlers/handlePasteImage";
+import { handlePasteImageUrl } from "../handlers/handlePasteImage.ts";
 
 type ImagePasteUrlModalProps = {
     slideId: string | null;

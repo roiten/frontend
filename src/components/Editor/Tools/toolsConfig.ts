@@ -1,5 +1,5 @@
-import { dispatch } from "../../store/editor.ts";
-import { addSlide, removeSlide } from "../../store/types.ts";
+import { dispatch } from "../../../store/editor.ts";
+import { addSlide, removeSlide } from "../../../store/actions.ts";
 import { handleAddText } from "./handlers/handleAddText.ts";
 import { v4 as uuid } from "uuid";
 

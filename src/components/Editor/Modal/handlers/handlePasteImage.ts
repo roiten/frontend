@@ -1,6 +1,6 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { addSlideObject } from "../../../store/actions.ts";
-import { IMAGE_PRESETS } from "../../../store/default.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { addSlideObject } from "../../../../store/actions.ts";
+import { IMAGE_PRESETS } from "../../../../store/default.ts";
 
 function handlePasteImageUrl(url: string) {
     const editor = getEditor();

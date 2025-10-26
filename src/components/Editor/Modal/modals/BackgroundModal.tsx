@@ -2,7 +2,7 @@ import styles from "./IslandModal.module.css";
 import {
     handleEditSlideBackgroundColor,
     handleEditSlideBackgroundImage,
-} from "../../../../lib/editor/handlers/handleEditSlideBackground";
+} from "../handlers/handleEditSlideBackground.ts";
 
 type BackgroundModalProps = {
     slideId: string | null;

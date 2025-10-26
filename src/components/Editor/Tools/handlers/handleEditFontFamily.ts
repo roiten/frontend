@@ -1,5 +1,5 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { setFontFamily } from "../../../store/types.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { setFontFamily } from "../../../../store/actions.ts";
 
 function handleEditFontFamily(textIds: string[], family: string) {
     const editor = getEditor();

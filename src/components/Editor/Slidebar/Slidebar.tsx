@@ -1,5 +1,5 @@
 import { type Slide } from "../../../store/types.ts";
-import { slidebarTools } from "../../../lib/editor/tools.ts";
+import { slidebarTools } from "../Tools/toolsConfig.ts";
 import SlidePreview from "./SlidePreview.tsx";
 import styles from "./Slidebar.module.css";
 import { dispatch } from "../../../store/editor";

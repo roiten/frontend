@@ -1,4 +1,4 @@
-import type { Editor, Slide, SlideObject, Background } from "./types";
+import type { Editor, Slide, SlideObject, Background, Text } from "./types";
 
 // Изменение названия презентации
 function setPresentationTitle(pres: Editor, newTitle: string): Editor {
@@ -231,6 +231,18 @@ function setSlideBackground(
     return { ...pres, slides: updatedSlides };
 }
 
+function getTextObjectById(pres: Editor, objectId: string): Text | null {
+    const currentSlide = pres.currentSlide;
+    if (!currentSlide) return null;
+
+    const current = pres.slides.find(slide => slide.id === currentSlide);
+    if (!current) return null;
+
+    const foundObject = current.content.find(obj => obj.id === objectId);
+    if (!foundObject || foundObject.type != "text") return null;
+    return foundObject
+}
+
 function chooseSlide(pres: Editor, slideId: string): Editor {
     const slideExists = pres.slides.some((slide) => slide.id === slideId);
     if (slideExists) {
@@ -295,4 +307,5 @@ export {
     addSelectedObject,
     removeSelectedObject,
     clearSelectedObjects,
+    getTextObjectById
 };

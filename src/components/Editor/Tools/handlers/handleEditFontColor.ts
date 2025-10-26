@@ -1,5 +1,5 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { setTextColor } from "../../../store/types.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { setTextColor } from "../../../../store/actions.ts";
 
 function handleEditFontColor(textIds: string[], color: string) {
     const editor = getEditor();

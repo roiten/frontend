@@ -1,8 +1,8 @@
-import styles from "../Workspace.module.css";
+import styles from "../../Workspace/Workspace.module.css";
 import { type Image } from "../../../../store/types.ts";
 import { removeSlideObject } from "../../../../store/actions.ts";
 import { type JSX } from "react";
-import joinStyles from "../../../../lib/utils/joinStyle.ts";
+import joinStyles from "../../../../utils/joinStyle.ts";
 import * as React from "react";
 import { dispatch } from "../../../../store/editor.ts";
 

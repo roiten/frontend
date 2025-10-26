@@ -1,6 +1,7 @@
-import { dispatch, getEditor } from "../../../store/editor.ts";
-import { addSlideObject, type SlideObject } from "../../../store/types.ts";
-import { TEXT_PRESETS } from "../../../store/default.ts";
+import { dispatch, getEditor } from "../../../../store/editor.ts";
+import { addSlideObject } from "../../../../store/actions.ts";
+import { TEXT_PRESETS } from "../../../../store/default.ts";
+import type { SlideObject } from "../../../../store/types.ts";
 
 function handleAddText() {
     const editor = getEditor();

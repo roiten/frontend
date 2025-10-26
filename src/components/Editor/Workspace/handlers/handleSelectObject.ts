@@ -1,9 +1,9 @@
-import { dispatch } from "../../../store/editor.ts";
+import { dispatch } from "../../../../store/editor.ts";
 import {
     addSelectedObject,
     clearSelectedObjects,
     removeSelectedObject,
-} from "../../../store/types.ts";
+} from "../../../../store/actions.ts";
 
 function handleSelectObject(objectId: string, isSelected: boolean) {
     if (isSelected) {

@@ -5,7 +5,8 @@ import {
     SLIDE_HEIGHT,
     SLIDE_WIDTH,
 } from "../../../store/default.ts";
-import joinStyles from "../../../lib/utils/joinStyle.ts";
+import joinStyles from "../../../utils/joinStyle.ts";
+import SlideRenderer from "../Slide/SlideRenderer.tsx";
 
 type Props = {
     slide: Slide;
@@ -33,61 +34,17 @@ export default function SlidePreview({
             style={{ width: PREVIEW_WIDTH }}
         >
             <div
-                className={styles.scaledContainer}
                 style={{
                     width: SLIDE_WIDTH * scale,
                     height: SLIDE_HEIGHT * scale,
                 }}
             >
-                <div
-                    className={styles.background}
-                    style={{
-                        background:
-                            slide.background.type === "color"
-                                ? slide.background.color
-                                : `url(${slide.background.source}) center/cover`,
-                        width: "100%",
-                        height: "100%",
-                    }}
+                <SlideRenderer
+                    slide={slide}
+                    scale={scale}
+                    selectedObjectIds={null}
+                    onSelectObject={undefined}
                 />
-
-                <div className={styles.thumbnailContent}>
-                    {slide.content.map((obj) =>
-                        obj.type === "text" ? (
-                            <div
-                                key={obj.id}
-                                className={styles.textObject}
-                                style={{
-                                    position: "absolute",
-                                    top: obj.position.y * scale,
-                                    left: obj.position.x * scale,
-                                    width: obj.size.width * scale,
-                                    height: obj.size.height * scale,
-                                    color: obj.font.color,
-                                    fontSize: obj.font.size * scale,
-                                    textDecoration: obj.font.textDecoration,
-                                    fontFamily: obj.font.family,
-                                }}
-                            >
-                                {obj.description}
-                            </div>
-                        ) : (
-                            <img
-                                key={obj.id}
-                                src={obj.source}
-                                alt=""
-                                style={{
-                                    position: "absolute",
-                                    top: obj.position.y * scale,
-                                    left: obj.position.x * scale,
-                                    width: obj.size.width * scale,
-                                    height: obj.size.height * scale,
-                                    opacity: obj.transparency,
-                                }}
-                            />
-                        ),
-                    )}
-                </div>
             </div>
 
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
