@@ -7,7 +7,7 @@ type Props = {
     selectedObjects: string[] | null;
     scale?: number;
     onSelectObject: (objectId: string, isSelected: boolean) => void;
-    onClearSelection: () => void;
+    onClearSelection: (e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 export default function Workspace({
@@ -25,7 +25,7 @@ export default function Workspace({
 
     const handleWorkspaceClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget && onClearSelection) {
-            onClearSelection();
+            onClearSelection(e);
         }
     };
 
@@ -33,13 +33,15 @@ export default function Workspace({
         return <div className={styles.wrapper}>Нет выбранного слайда</div>;
 
     return (
-        <div className={styles.wrapper} onClick={handleWorkspaceClick}>
-            <SlideRenderer
-                slide={slide}
-                scale={scale}
-                selectedObjectIds={selectedObjects}
-                onSelectObject={handleSelectObject}
-            />
+        <div className={styles.wrapper}>
+                <SlideRenderer
+                    slide={slide}
+                    scale={scale}
+                    canClickObject={true}
+                    selectedObjectIds={selectedObjects}
+                    onSelectObject={handleSelectObject}
+                    clearSelectedObjects={handleWorkspaceClick}
+                />
         </div>
     );
 }

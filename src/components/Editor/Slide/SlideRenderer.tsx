@@ -6,21 +6,25 @@ import styles from "../Workspace/Workspace.module.css";
 type Props = {
     slide: Slide;
     scale?: number;
-    selectedObjectIds?: Set<string> | string[] | null;
+    canClickObject: boolean;
+    selectedObjectIds?: string[] | null;
     onSelectObject?: (objectId: string) => void;
+    clearSelectedObjects?: (e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 export default function SlideRenderer({
     slide,
     scale = 1,
     selectedObjectIds = null,
+    canClickObject,
     onSelectObject,
+    clearSelectedObjects,
+
 }: Props) {
+
     const isSelected = (id: string): boolean => {
         if (!selectedObjectIds) return false;
-        return Array.isArray(selectedObjectIds)
-            ? selectedObjectIds.includes(id)
-            : selectedObjectIds.has(id);
+        return selectedObjectIds.includes(id)
     };
 
     const backgroundStyle =
@@ -35,12 +39,13 @@ export default function SlideRenderer({
     return (
         <div
             className={styles.scaledContainer}
+            onClick={clearSelectedObjects}
             style={{
                 transform: `scale(${scale})`,
                 transformOrigin: "top left",
             }}
         >
-            <div className={styles.workspace} style={backgroundStyle}>
+            <div className={styles.workspace} style={backgroundStyle} onClick={clearSelectedObjects}>
                 {slide.content.map((obj: SlideObject) => {
                     if (obj.type === "text") {
                         return (
@@ -49,6 +54,7 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
+                                canClickObject={canClickObject}
                                 onClick={() => onSelectObject?.(obj.id)}
                             />
                         );
@@ -59,6 +65,7 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
+                                canClickObject={canClickObject}
                                 onClick={() => onSelectObject?.(obj.id)}
                             />
                         );

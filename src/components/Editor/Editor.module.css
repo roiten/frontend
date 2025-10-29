@@ -11,6 +11,6 @@
     display: flex;
     flex: 1 1 auto;
     flex-direction: row;
-    justify-content: space-around;
+    justify-content: center;
     overflow: auto hidden;
 }

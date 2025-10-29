@@ -42,6 +42,7 @@ export default function SlidePreview({
                 <SlideRenderer
                     slide={slide}
                     scale={scale}
+                    canClickObject={false}
                     selectedObjectIds={null}
                     onSelectObject={undefined}
                 />

@@ -88,13 +88,29 @@ function editObject(obj: SlideObject, src: string): SlideObject {
 
 // изменение позиции объекта
 function setObjectPositionCoordinates(
+    pres: Editor,
+    slideId: string,
     slideObject: SlideObject,
     position: { x: number; y: number },
-): SlideObject {
-    return {
+): Editor {
+    const slide = pres.slides.find((s) => s.id === slideId);
+    if (!slide) return pres;
+
+    const newObject = {
         ...slideObject,
         position: { ...slideObject.position, ...position },
-    } as SlideObject;
+    };
+
+    const newContent = slide.content.map(obj =>
+        obj.id === slideObject.id ? newObject : obj
+    );
+
+    const newSlide = { ...slide, content: newContent };
+    const newSlides = pres.slides.map(s =>
+        s.id === slideId ? newSlide : s
+    );
+
+    return { ...pres, slides: newSlides, editedAt: new Date() };
 }
 
 // изменение размера объекта
@@ -235,12 +251,12 @@ function getTextObjectById(pres: Editor, objectId: string): Text | null {
     const currentSlide = pres.currentSlide;
     if (!currentSlide) return null;
 
-    const current = pres.slides.find(slide => slide.id === currentSlide);
+    const current = pres.slides.find((slide) => slide.id === currentSlide);
     if (!current) return null;
 
-    const foundObject = current.content.find(obj => obj.id === objectId);
+    const foundObject = current.content.find((obj) => obj.id === objectId);
     if (!foundObject || foundObject.type != "text") return null;
-    return foundObject
+    return foundObject;
 }
 
 function chooseSlide(pres: Editor, slideId: string): Editor {
@@ -307,5 +323,5 @@ export {
     addSelectedObject,
     removeSelectedObject,
     clearSelectedObjects,
-    getTextObjectById
+    getTextObjectById,
 };

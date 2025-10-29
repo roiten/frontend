@@ -1,15 +1,17 @@
 import styles from "../../Workspace/Workspace.module.css";
 import { type Image } from "../../../../store/types.ts";
 import { removeSlideObject } from "../../../../store/actions.ts";
-import { type JSX } from "react";
+import { type JSX, useEffect } from "react";
 import joinStyles from "../../../../utils/joinStyle.ts";
-import * as React from "react";
 import { dispatch } from "../../../../store/editor.ts";
+import { useDnd } from "../hooks/useDnd.ts";
+import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
 
 type Props = {
     obj: Image;
     slideId: string;
     isSelected: boolean;
+    canClickObject: boolean;
     onClick?: () => void;
 };
 
@@ -17,14 +19,32 @@ export default function SlideImageObject({
     obj,
     isSelected,
     onClick,
+    canClickObject,
     slideId,
 }: Props): JSX.Element {
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (event.key === "Delete") {
-            event.preventDefault();
-            dispatch(removeSlideObject, slideId, obj.id);
-        }
-    };
+    const { top, left, onMouseDown } = useDnd({
+        startX: obj.position.x,
+        startY: obj.position.y,
+        onMouseMove: () => {},
+        onFinish: (newX, newY) => {
+            console.log("drag ended at", newX, newY);
+            handleMoveObject(slideId, obj, {newX, newY});
+
+        },
+    });
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (isSelected && event.key === "Delete") {
+                event.preventDefault();
+                dispatch(removeSlideObject, slideId, obj.id);
+            }
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isSelected, slideId, obj.id]);
 
     return (
         <div
@@ -33,15 +53,16 @@ export default function SlideImageObject({
                 isSelected ? styles.selectedObject : styles.nonSelectedObject,
             ])}
             style={{
-                top: `${obj.position.y}px`,
-                left: `${obj.position.x}px`,
+                top: `${top}px`,
+                left: `${left}px`,
                 width: `${obj.size.width}px`,
                 height: `${obj.size.height}px`,
                 opacity: obj.transparency,
+                border: isSelected ? "1px dashed red" : "none",
             }}
             tabIndex={isSelected ? 0 : -1}
-            onClick={onClick}
-            onKeyDown={handleKeyDown}
+            onClick={canClickObject ? onClick : () => {}}
+            onMouseDown={onMouseDown}
         >
             <img
                 className={styles.picture}

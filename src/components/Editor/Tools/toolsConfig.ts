@@ -11,8 +11,6 @@ export type Tool = {
 
 export const saveTools: Tool[] = [
     { name: "Сохранить", icon: "/icons/floppy-disk.svg" },
-    // { name: 'в PDF', icon: '/icons/export.svg' },
-    // { name: 'История', icon: '/icons/clock-counter-clockwise.svg' },
 ];
 
 export function createEditTools(
@@ -29,16 +27,11 @@ export function createEditTools(
             icon: "/icons/wall.svg",
             action: () => onToolAction?.("background"),
         },
-        // { name: 'Вставить', icon: '/icons/clipboard-text.svg' },
-        // { name: 'По образцу', icon: '/icons/paint-roller.svg' },
         {
             name: "URL-картинка",
             icon: "/icons/shapes.svg",
             action: () => onToolAction?.("image-url"),
         },
-        // { name: 'Таблица', icon: '/icons/grid-nine.svg' },
-        // { name: 'Список', icon: '/icons/list-bullets.svg' },
-        // { name: 'Отступы', icon: '/icons/text-indent.svg' },
     ];
 }
 

@@ -8,6 +8,7 @@ import { getTextObjectById } from "../../../store/actions.ts";
 import { getEditor } from "../../../store/editor.ts";
 import { useEffect, useState } from "react";
 import type { Editor } from "../../../store/types.ts";
+import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 
 type ToolsProps = {
     selectedObjects: string[] | null;
@@ -16,8 +17,10 @@ type ToolsProps = {
 
 function getSelectionInfo(selectedObjectIds: string[], editor: Editor) {
     const hasSelection = selectedObjectIds.length > 0;
-    const textObjects = selectedObjectIds.map(id => getTextObjectById(editor, id));
-    const hasNoText = textObjects.some(obj => obj === null);
+    const textObjects = selectedObjectIds.map((id) =>
+        getTextObjectById(editor, id),
+    );
+    const hasNoText = textObjects.some((obj) => obj === null);
     const allAreText = hasSelection && !hasNoText;
     return { textObjects, allAreText };
 }
@@ -31,7 +34,10 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
 
     useEffect(() => {
         const editor = getEditor();
-        const { textObjects, allAreText } = getSelectionInfo(selectedObjectIds, editor);
+        const { textObjects, allAreText } = getSelectionInfo(
+            selectedObjectIds,
+            editor,
+        );
         if (allAreText && textObjects.length === 1) {
             setTempFontSize(String(textObjects[0]!.font.size));
         } else {
@@ -39,32 +45,28 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
         }
     }, [selectedObjectIds]);
 
-    const { textObjects, allAreText } = getSelectionInfo(selectedObjectIds, editor);
+    const { textObjects, allAreText } = getSelectionInfo(
+        selectedObjectIds,
+        editor,
+    );
 
-
-    const fontFamily = allAreText && textObjects.length === 1
-        ? textObjects[0]!.font.family
-        : "";
+    const fontFamily =
+        allAreText && textObjects.length === 1
+            ? textObjects[0]!.font.family
+            : "";
 
     return (
         <div className={styles.tools}>
             {tools.map((tool: Tool) => (
-                <span
+                <SquareButton
                     key={tool.name}
-                    className={styles.tool}
+                    tool={tool}
                     onClick={() => {
                         if (tool.action) {
                             tool.action();
                         }
                     }}
-                >
-                    <img
-                        className={styles.toolIcon}
-                        alt={tool.name}
-                        src={tool.icon}
-                    />
-                    <span className={styles.toolName}>{tool.name}</span>
-                </span>
+                />
             ))}
             <form>
                 <select
@@ -74,7 +76,10 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
                     value={fontFamily}
                     onChange={(e) => {
                         if (allAreText) {
-                            handleEditFontFamily(selectedObjectIds, e.currentTarget.value);
+                            handleEditFontFamily(
+                                selectedObjectIds,
+                                e.currentTarget.value,
+                            );
                         }
                     }}
                 >
@@ -110,7 +115,10 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
                 disabled={!allAreText}
                 onChange={(e) => {
                     if (allAreText) {
-                        handleEditFontColor(selectedObjectIds, e.currentTarget.value);
+                        handleEditFontColor(
+                            selectedObjectIds,
+                            e.currentTarget.value,
+                        );
                     }
                 }}
             />

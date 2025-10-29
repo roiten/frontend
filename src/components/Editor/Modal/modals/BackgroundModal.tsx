@@ -3,6 +3,7 @@ import {
     handleEditSlideBackgroundColor,
     handleEditSlideBackgroundImage,
 } from "../handlers/handleEditSlideBackground.ts";
+import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 
 type BackgroundModalProps = {
     slideId: string | null;
@@ -41,12 +42,8 @@ export default function BackgroundModal({
                 </div>
             </div>
             <div className={styles.controlButtons}>
-                <span className={styles.tool} onClick={handleApply}>
-                    Применить
-                </span>
-                <span className={styles.tool} onClick={onClose}>
-                    Отмена
-                </span>
+                <SquareButton tool={{name: 'Применить'}} onClick={handleApply} />
+                <SquareButton tool={{name: 'Отмена'}} onClick={onClose} />
             </div>
         </div>
     );

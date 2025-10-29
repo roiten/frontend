@@ -5,13 +5,17 @@ import {
     setTextDescription,
 } from "../../../../store/actions.ts";
 import type { Text } from "../../../../store/types.ts";
-import { useState, type JSX } from "react";
+import { useState, useRef, type JSX, useEffect } from "react";
 import joinStyles from "../../../../utils/joinStyle.ts";
+import { useDnd } from "../hooks/useDnd.ts";
+import * as React from "react";
+import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
 
 type Props = {
     obj: Text;
     slideId: string;
     isSelected: boolean;
+    canClickObject: boolean;
     onClick?: () => void;
 };
 
@@ -19,24 +23,56 @@ export default function SlideTextObject({
     obj,
     slideId,
     isSelected,
+    canClickObject,
     onClick,
 }: Props): JSX.Element {
     const [isEditing, setIsEditing] = useState(false);
+    const [isBorderHovered, setIsBorderHovered] = useState(false);
+    const textRef = useRef<HTMLDivElement>(null);
 
-    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
-        if (!isEditing && event.key === "Delete") {
-            event.preventDefault();
-            dispatch(removeSlideObject, slideId, obj.id);
-        }
-    };
+    const { top, left, onMouseDown } = useDnd({
+        startX: obj.position.x,
+        startY: obj.position.y,
+        onMouseMove: () => {},
+        onFinish: (newX, newY) => {
+            console.log("drag ended at", newX, newY);
+            handleMoveObject(slideId, obj, { newX, newY });
+        },
+    });
+
+    useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if (isSelected && event.key === "Delete" && !isEditing) {
+                event.preventDefault();
+                dispatch(removeSlideObject, slideId, obj.id);
+            }
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [isSelected, isEditing, slideId, obj.id]);
 
     const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
         e.stopPropagation();
-        if (!isSelected) {
-            onClick?.();
-        } else if (!isEditing) {
-            setIsEditing(true);
-        }
+        if (!isSelected) onClick?.();
+        setIsEditing(true);
+
+        setTimeout(() => {
+            const element = textRef.current;
+            if (!element) return;
+            element.focus();
+
+            const position = document.caretPositionFromPoint(e.clientX, e.clientY);
+            if (position) {
+                const range = document.createRange();
+                range.setStart(position.offsetNode, position.offset);
+                range.collapse(true);
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(range);
+            }
+        }, 0);
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -53,31 +89,100 @@ export default function SlideTextObject({
         }
     };
 
+    const handleBorderMouseEnter = () => {
+        if (isSelected) {
+            setIsBorderHovered(true);
+        }
+    };
+
+    const handleBorderMouseLeave = () => {
+        setIsBorderHovered(false);
+    };
+
+    const handleBorderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (canClickObject) {
+            onMouseDown(e);
+            if (isEditing) {
+                setIsEditing(false);
+            }
+        }
+    };
     return (
         <div
-            className={joinStyles([
-                styles.slideObject,
-                isSelected ? styles.selectedObject : styles.nonSelectedObject,
-            ])}
+            className={styles.editableObject}
             style={{
-                top: `${obj.position.y}px`,
-                left: `${obj.position.x}px`,
-                width: `${obj.size.width}px`,
-                cursor: isEditing ? "text" : "default",
-                color: obj.font.color,
-                fontSize: `${obj.font.size}px`,
-                textDecoration: obj.font.textDecoration,
-                fontFamily: obj.font.family,
-                userSelect: isEditing ? "text" : "none",
+                top: `${top}px`,
+                left: `${left}px`,
             }}
-            tabIndex={isSelected ? 0 : -1}
-            onClick={handleClick}
-            onKeyDown={handleKeyDown}
-            onBlur={handleBlur}
-            contentEditable={isEditing}
-            suppressContentEditableWarning
         >
-            {obj.description || "Введите текст"}
+            <div
+                className={joinStyles([
+                    styles.borderContainer,
+                    isSelected ? styles.selectedBorder : "",
+                    isBorderHovered ? styles.moveCursor : "",
+                ])}
+                onMouseEnter={handleBorderMouseEnter}
+                onMouseLeave={handleBorderMouseLeave}
+                onMouseDown={handleBorderMouseDown}
+            >
+                <div
+                    ref={textRef}
+                    className={joinStyles([
+                        styles.slideObject,
+                        isSelected
+                            ? styles.selectedObject
+                            : styles.nonSelectedObject,
+                    ])}
+                    style={{
+                        color: obj.font.color,
+                        fontSize: `${obj.font.size}px`,
+                        fontFamily: obj.font.family,
+                        textDecoration: obj.font.textDecoration,
+                        userSelect: isEditing ? "text" : "none",
+                        cursor: isEditing ? "text" : "default",
+                        padding: '2px',
+                    }}
+                    tabIndex={isSelected ? 0 : -1}
+                    onClick={handleClick}
+                    onBlur={handleBlur}
+                    contentEditable={isEditing}
+                    suppressContentEditableWarning
+                >
+                    {obj.description || "Введите текст"}
+                </div>
+
+                {isSelected && (
+                    <>
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleTopLeft,
+                            ])}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleTopRight,
+                            ])}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleBottomLeft,
+                            ])}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleBottomRight,
+                            ])}
+                        />
+                    </>
+                )}
+            </div>
         </div>
     );
 }

@@ -1,5 +1,6 @@
 import styles from "./IslandModal.module.css";
 import { handlePasteImageUrl } from "../handlers/handlePasteImage.ts";
+import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 
 type ImagePasteUrlModalProps = {
     slideId: string | null;
@@ -27,12 +28,8 @@ export default function ImagePasteUrlModal({
                 </div>
             </div>
             <div className={styles.controlButtons}>
-                <span className={styles.tool} onClick={handleApply}>
-                    Применить
-                </span>
-                <span className={styles.tool} onClick={onClose}>
-                    Отмена
-                </span>
+                <SquareButton tool={{name: 'Применить'}} onClick={handleApply} />
+                <SquareButton tool={{name: 'Отмена'}} onClick={onClose} />
             </div>
         </div>
     );

@@ -90,8 +90,8 @@ export function maxTest(): Editor {
         type: "image",
         source: "https://avatars.mds.yandex.net/i?id=8eeb4769444ae6fbcba59763dd9eca47_l-10836825-images-thumbs&n=13",
         transparency: 1,
-        position: { x: 0, y: 0 },
-        size: { width: 1200, height: 500 },
+        position: { x: 50, y: 80 },
+        size: { width: 1000, height: 400 },
     };
 
     const maxImage2: Image = {

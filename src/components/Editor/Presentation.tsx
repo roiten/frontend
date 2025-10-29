@@ -50,7 +50,11 @@ export default function Presentation({
                 openModal("image-url");
                 break;
             default:
-                console.log("Выбран инструмент:", toolName, "действие не назначено");
+                console.log(
+                    "Выбран инструмент:",
+                    toolName,
+                    "действие не назначено",
+                );
         }
     }
 
