@@ -6,25 +6,21 @@ import styles from "../Workspace/Workspace.module.css";
 type Props = {
     slide: Slide;
     scale?: number;
-    canClickObject: boolean;
-    selectedObjectIds?: string[] | null;
-    onSelectObject?: (objectId: string) => void;
-    clearSelectedObjects?: (e: React.MouseEvent<HTMLDivElement>) => void;
+    selectionProps?: {
+        selectedObjectIds: string[] | null;
+        onSelectObject: (objectId: string) => void;
+        onDeselectObject: (e: React.MouseEvent<HTMLDivElement>) => void;
+    };
 };
 
 export default function SlideRenderer({
     slide,
     scale = 1,
-    selectedObjectIds = null,
-    canClickObject,
-    onSelectObject,
-    clearSelectedObjects,
-
+    selectionProps,
 }: Props) {
 
     const isSelected = (id: string): boolean => {
-        if (!selectedObjectIds) return false;
-        return selectedObjectIds.includes(id)
+        return !!selectionProps?.selectedObjectIds?.includes(id);
     };
 
     const backgroundStyle =
@@ -39,13 +35,16 @@ export default function SlideRenderer({
     return (
         <div
             className={styles.scaledContainer}
-            onClick={clearSelectedObjects}
+            onClick={selectionProps?.onDeselectObject}
             style={{
                 transform: `scale(${scale})`,
-                transformOrigin: "top left",
             }}
         >
-            <div className={styles.workspace} style={backgroundStyle} onClick={clearSelectedObjects}>
+            <div
+                className={styles.workspace}
+                style={backgroundStyle}
+                onClick={selectionProps?.onDeselectObject}
+            >
                 {slide.content.map((obj: SlideObject) => {
                     if (obj.type === "text") {
                         return (
@@ -54,8 +53,7 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
-                                canClickObject={canClickObject}
-                                onClick={() => onSelectObject?.(obj.id)}
+                                onClick={() => selectionProps?.onSelectObject?.(obj.id)}
                             />
                         );
                     } else if (obj.type === "image") {
@@ -65,8 +63,7 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
-                                canClickObject={canClickObject}
-                                onClick={() => onSelectObject?.(obj.id)}
+                                onClick={() => selectionProps?.onSelectObject?.(obj.id)}
                             />
                         );
                     }

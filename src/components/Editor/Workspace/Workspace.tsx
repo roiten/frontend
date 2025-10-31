@@ -37,10 +37,11 @@ export default function Workspace({
                 <SlideRenderer
                     slide={slide}
                     scale={scale}
-                    canClickObject={true}
-                    selectedObjectIds={selectedObjects}
-                    onSelectObject={handleSelectObject}
-                    clearSelectedObjects={handleWorkspaceClick}
+                    selectionProps={{
+                        selectedObjectIds: selectedObjects,
+                        onSelectObject: handleSelectObject,
+                        onDeselectObject: handleWorkspaceClick,
+                    }}
                 />
         </div>
     );

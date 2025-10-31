@@ -11,7 +11,6 @@ type Props = {
     obj: Image;
     slideId: string;
     isSelected: boolean;
-    canClickObject: boolean;
     onClick?: () => void;
 };
 
@@ -19,7 +18,6 @@ export default function SlideImageObject({
     obj,
     isSelected,
     onClick,
-    canClickObject,
     slideId,
 }: Props): JSX.Element {
     const { top, left, onMouseDown } = useDnd({
@@ -61,11 +59,12 @@ export default function SlideImageObject({
                 border: isSelected ? "1px dashed red" : "none",
             }}
             tabIndex={isSelected ? 0 : -1}
-            onClick={canClickObject ? onClick : () => {}}
-            onMouseDown={onMouseDown}
+            onClick={onClick}
+            onMouseDown={onClick ? onMouseDown : () => {}}
         >
             <img
                 className={styles.picture}
+                draggable={!!onClick}
                 src={obj.source}
                 alt="Картинка на слайде"
             />

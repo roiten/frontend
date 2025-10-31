@@ -15,7 +15,6 @@ type Props = {
     obj: Text;
     slideId: string;
     isSelected: boolean;
-    canClickObject: boolean;
     onClick?: () => void;
 };
 
@@ -23,7 +22,6 @@ export default function SlideTextObject({
     obj,
     slideId,
     isSelected,
-    canClickObject,
     onClick,
 }: Props): JSX.Element {
     const [isEditing, setIsEditing] = useState(false);
@@ -33,7 +31,6 @@ export default function SlideTextObject({
     const { top, left, onMouseDown } = useDnd({
         startX: obj.position.x,
         startY: obj.position.y,
-        onMouseMove: () => {},
         onFinish: (newX, newY) => {
             console.log("drag ended at", newX, newY);
             handleMoveObject(slideId, obj, { newX, newY });
@@ -103,7 +100,7 @@ export default function SlideTextObject({
         e.preventDefault();
         e.stopPropagation();
 
-        if (canClickObject) {
+        if (onClick) {
             onMouseDown(e);
             if (isEditing) {
                 setIsEditing(false);
@@ -126,10 +123,11 @@ export default function SlideTextObject({
                 ])}
                 onMouseEnter={handleBorderMouseEnter}
                 onMouseLeave={handleBorderMouseLeave}
-                onMouseDown={handleBorderMouseDown}
+                onMouseDown={isEditing ? () => {} : handleBorderMouseDown}
             >
                 <div
                     ref={textRef}
+                    key={obj.id}
                     className={joinStyles([
                         styles.slideObject,
                         isSelected
@@ -148,6 +146,11 @@ export default function SlideTextObject({
                     tabIndex={isSelected ? 0 : -1}
                     onClick={handleClick}
                     onBlur={handleBlur}
+                    onMouseDown={(e) => {
+                        if (isEditing) {
+                            e.stopPropagation();
+                        }
+                    }}
                     contentEditable={isEditing}
                     suppressContentEditableWarning
                 >

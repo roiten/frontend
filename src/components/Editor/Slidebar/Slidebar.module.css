@@ -45,10 +45,11 @@
     flex-direction: column;
     justify-content: flex-end;
     align-items: flex-end;
+    user-select: none
 }
 
 .thumbnailSelected {
-    box-shadow: 0 0 0 2px gray;
+    box-shadow: 0 0 0 2px #333333;
 }
 
 .thumbnail:hover {
@@ -86,4 +87,10 @@
     text-align: center;
     font-size: 0.7rem;
     margin-bottom: 2px;
+}
+
+.moveLine {
+    height: 5px;
+    background-color: black;
+    margin-bottom: 30px;
 }

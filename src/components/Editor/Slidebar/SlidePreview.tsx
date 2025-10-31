@@ -13,6 +13,8 @@ type Props = {
     index: number;
     isSelected: boolean;
     onClick: () => void;
+    onMouseDown?: () => void;
+    onMouseEnter?: () => void;
 };
 
 export default function SlidePreview({
@@ -20,6 +22,8 @@ export default function SlidePreview({
     index,
     isSelected,
     onClick,
+    onMouseDown,
+    onMouseEnter,
 }: Props) {
     const scale = PREVIEW_WIDTH / SLIDE_WIDTH;
 
@@ -32,6 +36,8 @@ export default function SlidePreview({
             }
             onClick={onClick}
             style={{ width: PREVIEW_WIDTH }}
+            onMouseDown={onMouseDown}
+            onMouseEnter={onMouseEnter}
         >
             <div
                 style={{
@@ -42,9 +48,6 @@ export default function SlidePreview({
                 <SlideRenderer
                     slide={slide}
                     scale={scale}
-                    canClickObject={false}
-                    selectedObjectIds={null}
-                    onSelectObject={undefined}
                 />
             </div>
 

@@ -6,23 +6,30 @@ import styles from "./Slidebar.module.css";
 import { dispatch, getEditor } from "../../../store/editor";
 import { chooseSlide } from "../../../store/actions.ts";
 import { useEffect, useState } from "react";
+import {useSlideMove} from "./hooks/useSlideMove.ts";
 
 type Props = {
-    slides: Slide[];
     currentSlideId: string | null;
 };
 
 export default function Slidebar({ currentSlideId }: Props) {
-    const [, forceUpdate] = useState(0);
-    const selectedSlideId = currentSlideId;
+    const editor = getEditor();
+    const { slides } = editor;
+
+    const {
+        dropIndex,
+        isDragging,
+        handleDragStart,
+        handleDragOver,
+    } = useSlideMove();
+
     const handleSlideClick = (slide: Slide) => {
         dispatch(chooseSlide, slide.id);
     };
 
-    const editor = getEditor();
-
+    const [updateState, forceUpdate] = useState(0);
     useEffect(() => {
-        forceUpdate(prev => prev + 1);
+        forceUpdate(updateState + 1);
     }, [editor]);
 
     return (
@@ -32,21 +39,32 @@ export default function Slidebar({ currentSlideId }: Props) {
                     <RoundButton
                         key={tool.name}
                         tool={tool}
-                        onClick={() => tool.action?.(selectedSlideId)}
+                        onClick={() => tool.action?.(currentSlideId)}
                     />
                 ))}
             </div>
 
             <div className={styles.slidebarList}>
-                {editor.slides.map((slide, index) => (
-                    <SlidePreview
-                        key={slide.id}
-                        slide={slide}
-                        isSelected={slide.id === selectedSlideId}
-                        index={index}
-                        onClick={() => handleSlideClick(slide)}
-                    />
+                {slides.map((slide, index) => (
+                    <div key={slide.id}>
+                        {isDragging && dropIndex === index && (
+                            <div className={styles.moveLine} />
+                        )}
+
+                        <SlidePreview
+                            slide={slide}
+                            isSelected={slide.id === currentSlideId}
+                            index={index}
+                            onClick={() => handleSlideClick(slide)}
+                            onMouseDown={() => handleDragStart(slide.id)}
+                            onMouseEnter={() => handleDragOver(index)}
+                        />
+                    </div>
                 ))}
+
+                {isDragging && dropIndex === slides.length && (
+                    <div className={styles.moveLine} />
+                )}
             </div>
         </div>
     );

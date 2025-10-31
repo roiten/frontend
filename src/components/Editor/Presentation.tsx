@@ -100,7 +100,6 @@ export default function Presentation({
 
             <div className={styles.main}>
                 <Slidebar
-                    slides={editor.slides}
                     currentSlideId={editor.currentSlide}
                 />
                 <Workspace

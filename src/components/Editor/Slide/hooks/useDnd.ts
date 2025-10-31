@@ -23,6 +23,8 @@ export function useDnd(args: DndArgs): DndResult {
     const [offsetX, setOffsetX] = useState(0);
     const [offsetY, setOffsetY] = useState(0);
 
+    //что то с хуками придумать  такого, чтобы в объекте может быть были
+
     useEffect(() => {
         if (!isDragging) {
             setLeft(startX);

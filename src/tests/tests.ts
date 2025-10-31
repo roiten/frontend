@@ -1,5 +1,5 @@
 import {
-    addSlide,
+    createSlide,
     setSlideBackground,
     addSlideObjectToSlide,
 } from "../store/actions.ts";
@@ -119,11 +119,11 @@ export function maxTest(): Editor {
     maxSlide2 = addSlideObjectToSlide(maxSlide2, maxImage1);
     maxSlide3 = addSlideObjectToSlide(maxSlide3, maxImage3);
 
-    maxPresentation = addSlide(maxPresentation, maxSlide1);
-    maxPresentation = addSlide(maxPresentation, maxSlide2);
-    maxPresentation = addSlide(maxPresentation, maxSlide3);
-    maxPresentation = addSlide(maxPresentation, maxSlide4);
-    maxPresentation = addSlide(maxPresentation, maxSlide5);
+    maxPresentation = createSlide(maxPresentation, maxSlide1);
+    maxPresentation = createSlide(maxPresentation, maxSlide2);
+    maxPresentation = createSlide(maxPresentation, maxSlide3);
+    maxPresentation = createSlide(maxPresentation, maxSlide4);
+    maxPresentation = createSlide(maxPresentation, maxSlide5);
 
     maxPresentation = setSlideBackground(maxPresentation, "slide1", {
         type: "picture",

@@ -6,9 +6,22 @@ function setPresentationTitle(pres: Editor, newTitle: string): Editor {
 }
 
 // добавление слайда
-function addSlide(pres: Editor, slide: Slide): Editor {
+function createSlide(pres: Editor, slide: Slide): Editor {
     const newSlides = [...pres.slides, slide];
     return { ...pres, slides: newSlides, editedAt: new Date() };
+}
+
+function addSlide(pres: Editor, slide: Slide): Editor {
+    const currentSlide = pres.currentSlide;
+    if (currentSlide) {
+        const currentIndex = pres.slides.findIndex((s) => s.id === currentSlide);
+        if (currentIndex === -1) return pres;
+        const newSlides = [...pres.slides];
+        newSlides.splice(currentIndex + 1, 0, slide);
+        return { ...pres, slides: newSlides, editedAt: new Date() };
+    } else {
+        return { ...pres, slides: [...pres.slides, slide], editedAt: new Date() };
+    }
 }
 
 // Удаление слайда
@@ -305,6 +318,7 @@ function clearSelectedObjects(pres: Editor): Editor {
 export {
     setPresentationTitle,
     addSlide,
+    createSlide,
     removeSlide,
     moveSlide,
     addSlideObject,

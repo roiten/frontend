@@ -43,7 +43,7 @@ export const slidebarTools: Tool[] = [
             const newSlide = {
                 id: uuid(),
                 content: [],
-                background: { color: "#fff" },
+                background: { color: 'white' },
             };
             dispatch(addSlide, newSlide);
         },

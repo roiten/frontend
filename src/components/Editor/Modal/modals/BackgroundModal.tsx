@@ -4,6 +4,7 @@ import {
     handleEditSlideBackgroundImage,
 } from "../handlers/handleEditSlideBackground.ts";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
+import { useState } from "react";
 
 type BackgroundModalProps = {
     slideId: string | null;
@@ -14,8 +15,21 @@ export default function BackgroundModal({
     slideId,
     onClose,
 }: BackgroundModalProps) {
+    const [colorBackground, setColorBackground] = useState<string>("white");
+    const [urlBackground, setUrlBackground] = useState<string>("");
+
+    function reset() {
+        setColorBackground("white");
+        onClose();
+    }
+
     function handleApply() {
         console.log("Apply bg: to slide:", slideId);
+        if (urlBackground != "") {
+            handleEditSlideBackgroundImage(urlBackground);
+        } else {
+            handleEditSlideBackgroundColor(colorBackground);
+        }
         onClose();
     }
 
@@ -26,24 +40,23 @@ export default function BackgroundModal({
                     <span>Цвет:</span>
                     <input
                         type="color"
-                        onChange={(e) =>
-                            handleEditSlideBackgroundColor(e.target.value)
-                        }
+                        onChange={(e) => setColorBackground(e.target.value)}
                     />
                 </div>
                 <div className={styles.row}>
                     <span>URL изображения:</span>
                     <input
                         type="url"
-                        onChange={(e) =>
-                            handleEditSlideBackgroundImage(e.target.value)
-                        }
+                        onChange={(e) => setUrlBackground(e.target.value)}
                     />
                 </div>
             </div>
             <div className={styles.controlButtons}>
-                <SquareButton tool={{name: 'Применить'}} onClick={handleApply} />
-                <SquareButton tool={{name: 'Отмена'}} onClick={onClose} />
+                <SquareButton
+                    tool={{ name: "Применить" }}
+                    onClick={handleApply}
+                />
+                <SquareButton tool={{ name: "Отмена" }} onClick={reset} />
             </div>
         </div>
     );
