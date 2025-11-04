@@ -1,4 +1,4 @@
-import PresentationComponent from "./components/Editor/Presentation.tsx";
+import PresentationComponent from "./view/Editor/Presentation.tsx";
 
 import type { Editor } from "./store/types.ts";
 type AppProps = {

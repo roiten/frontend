@@ -60,31 +60,59 @@
 
 .resizeHandle {
     position: absolute;
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
     background: blue;
     border: 1px solid blue;
-    border-radius: 4px;
+    border-radius: 8px;
     box-sizing: border-box;
     z-index: 2;
 }
 
 .resizeHandleTopLeft {
-    top: -5px;
-    left: -5px;
+    top: -8px;
+    left: -8px;
+    cursor: nwse-resize;
 }
 
 .resizeHandleTopRight {
-    top: -5px;
-    right: -5px;
+    top: -8px;
+    right: -8px;
+    cursor: nesw-resize;
 }
 
 .resizeHandleBottomLeft {
-    bottom: -5px;
-    left: -5px;
+    bottom: -8px;
+    left: -8px;
+    cursor: nesw-resize;
 }
 
 .resizeHandleBottomRight {
-    bottom: -5px;
-    right: -5px;
+    bottom: -8px;
+    right: -8px;
+    cursor: nwse-resize;
+}
+
+.resizeHandleTop {
+    top: -8px;
+    left: 50%;
+    cursor: ns-resize;
+}
+
+.resizeHandleRight {
+    top: 50%;
+    right: -8px;
+    cursor: ew-resize;
+}
+
+.resizeHandleLeft {
+    top: 50%;
+    left: -8px;
+    cursor: ew-resize;
+}
+
+.resizeHandleBottom {
+    bottom: -8px;
+    left: 50%;
+    cursor: ns-resize;
 }

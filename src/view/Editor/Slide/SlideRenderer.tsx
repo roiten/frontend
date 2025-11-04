@@ -18,7 +18,6 @@ export default function SlideRenderer({
     scale = 1,
     selectionProps,
 }: Props) {
-
     const isSelected = (id: string): boolean => {
         return !!selectionProps?.selectedObjectIds?.includes(id);
     };
@@ -53,7 +52,14 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
-                                onClick={() => selectionProps?.onSelectObject?.(obj.id)}
+                                onClick={
+                                    selectionProps
+                                        ? () =>
+                                            selectionProps.onSelectObject(
+                                                obj.id,
+                                            )
+                                        : undefined
+                                }
                             />
                         );
                     } else if (obj.type === "image") {
@@ -63,7 +69,14 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
-                                onClick={() => selectionProps?.onSelectObject?.(obj.id)}
+                                onClick={
+                                    selectionProps
+                                        ? () =>
+                                              selectionProps.onSelectObject(
+                                                  obj.id,
+                                              )
+                                        : undefined
+                                }
                             />
                         );
                     }

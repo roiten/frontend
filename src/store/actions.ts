@@ -122,20 +122,37 @@ function setObjectPositionCoordinates(
     const newSlides = pres.slides.map(s =>
         s.id === slideId ? newSlide : s
     );
+    return { ...pres, slides: newSlides, editedAt: new Date() };
+}
+
+function setObjectPositionSize(
+    pres: Editor,
+    slideId: string,
+    slideObject: SlideObject,
+    position: { x: number; y: number },
+    size: { width: number; height: number }
+): Editor {
+    const slide = pres.slides.find((s) => s.id === slideId);
+    if (!slide) return pres;
+
+    const newObject = {
+        ...slideObject,
+        size: { ...slideObject.size, ...size },
+        position: { ...slideObject.position, ...position },
+    };
+
+    const newContent = slide.content.map(obj =>
+        obj.id === slideObject.id ? newObject : obj
+    );
+
+    const newSlide = { ...slide, content: newContent };
+    const newSlides = pres.slides.map(s =>
+        s.id === slideId ? newSlide : s
+    );
 
     return { ...pres, slides: newSlides, editedAt: new Date() };
 }
 
-// изменение размера объекта
-function setObjectPositionSize(
-    slideObject: SlideObject,
-    size: { width: number; height: number },
-): SlideObject {
-    return {
-        ...slideObject,
-        size: { ...slideObject.size, width: size.width, height: size.height },
-    } as SlideObject;
-}
 
 // Изменение размера шрифта для текста
 function setTextSizeToSlide(slide: Slide, textId: string, size: number): Slide {

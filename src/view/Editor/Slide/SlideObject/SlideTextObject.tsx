@@ -10,6 +10,7 @@ import joinStyles from "../../../../utils/joinStyle.ts";
 import { useDnd } from "../hooks/useDnd.ts";
 import * as React from "react";
 import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
+import { handleResizeObject } from "../../Workspace/handlers/handleResizeObject.ts";
 
 type Props = {
     obj: Text;
@@ -28,12 +29,21 @@ export default function SlideTextObject({
     const [isBorderHovered, setIsBorderHovered] = useState(false);
     const textRef = useRef<HTMLDivElement>(null);
 
-    const { top, left, onMouseDown } = useDnd({
+    const { top, left, width, height, onMouseDown, onResizeDown } = useDnd({
         startX: obj.position.x,
         startY: obj.position.y,
-        onFinish: (newX, newY) => {
-            console.log("drag ended at", newX, newY);
+        defaultWidth: obj.size.width,
+        defaultHeight: obj.size.height,
+        onFinishMove: (newX, newY) => {
             handleMoveObject(slideId, obj, { newX, newY });
+        },
+        onFinishResize: (newX, newY, newW, newH) => {
+            handleResizeObject({
+                slideId,
+                slideObject: obj,
+                size: { width: newW, height: newH },
+                position: { x: newX, y: newY },
+            });
         },
     });
 
@@ -50,26 +60,33 @@ export default function SlideTextObject({
         };
     }, [isSelected, isEditing, slideId, obj.id]);
 
-    const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        if (!isSelected) {
+            e.stopPropagation();
+            onClick?.();
+        }
+
+        if (isEditing) return;
+
         e.stopPropagation();
-        if (!isSelected) onClick?.();
+        e.preventDefault();
         setIsEditing(true);
 
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             const element = textRef.current;
             if (!element) return;
             element.focus();
 
-            const position = document.caretPositionFromPoint(e.clientX, e.clientY);
-            if (position) {
+            const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
+            if (pos) {
                 const range = document.createRange();
-                range.setStart(position.offsetNode, position.offset);
+                range.setStart(pos.offsetNode, pos.offset);
                 range.collapse(true);
-                const selection = window.getSelection();
-                selection?.removeAllRanges();
-                selection?.addRange(range);
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(range);
             }
-        }, 0);
+        });
     };
 
     const handleBlur = (e: React.FocusEvent<HTMLDivElement>) => {
@@ -87,32 +104,32 @@ export default function SlideTextObject({
     };
 
     const handleBorderMouseEnter = () => {
-        if (isSelected) {
-            setIsBorderHovered(true);
-        }
+        if (isSelected) setIsBorderHovered(true);
     };
-
-    const handleBorderMouseLeave = () => {
-        setIsBorderHovered(false);
-    };
+    const handleBorderMouseLeave = () => setIsBorderHovered(false);
 
     const handleBorderMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLElement;
+        if (target.closest(`.${styles.resizeHandle}`)) return;
+
         e.preventDefault();
         e.stopPropagation();
 
-        if (onClick) {
-            onMouseDown(e);
-            if (isEditing) {
-                setIsEditing(false);
-            }
-        }
+        onMouseDown(e);
+        if (isEditing) setIsEditing(false);
     };
+
     return (
         <div
             className={styles.editableObject}
             style={{
                 top: `${top}px`,
                 left: `${left}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                display: "flex",
+                alignItems: "flex-start",
+                justifyContent: "flex-start",
             }}
         >
             <div
@@ -124,6 +141,7 @@ export default function SlideTextObject({
                 onMouseEnter={handleBorderMouseEnter}
                 onMouseLeave={handleBorderMouseLeave}
                 onMouseDown={isEditing ? () => {} : handleBorderMouseDown}
+                style={{ width: "100%", height: "100%" }}
             >
                 <div
                     ref={textRef}
@@ -141,16 +159,22 @@ export default function SlideTextObject({
                         textDecoration: obj.font.textDecoration,
                         userSelect: isEditing ? "text" : "none",
                         cursor: isEditing ? "text" : "default",
-                        padding: '2px',
+                        whiteSpace: "pre-wrap",
+                        wordBreak: "break-word",
+                        boxSizing: "border-box",
+                        padding: "2px",
+                        width: "100%",
+                        height: "100%",
+                        display: "block",
+                        overflowWrap: "break-word",
+                        outline: "none",
                     }}
                     tabIndex={isSelected ? 0 : -1}
-                    onClick={handleClick}
+                    onMouseDown={handleMouseDown}
                     onBlur={handleBlur}
-                    onMouseDown={(e) => {
-                        if (isEditing) {
-                            e.stopPropagation();
-                        }
-                    }}
+                     // onMouseDown={(e) => {
+                     //     if (isEditing) e.stopPropagation(); // СОВЕРШЕННО ЗАБЫЛ ЧТО ПРИ onClick просиходит перерендер
+                     // }}
                     contentEditable={isEditing}
                     suppressContentEditableWarning
                 >
@@ -164,24 +188,56 @@ export default function SlideTextObject({
                                 styles.resizeHandle,
                                 styles.resizeHandleTopLeft,
                             ])}
+                            onMouseDown={onResizeDown("tl")}
                         />
                         <div
                             className={joinStyles([
                                 styles.resizeHandle,
                                 styles.resizeHandleTopRight,
                             ])}
+                            onMouseDown={onResizeDown("tr")}
                         />
                         <div
                             className={joinStyles([
                                 styles.resizeHandle,
                                 styles.resizeHandleBottomLeft,
                             ])}
+                            onMouseDown={onResizeDown("bl")}
                         />
                         <div
                             className={joinStyles([
                                 styles.resizeHandle,
                                 styles.resizeHandleBottomRight,
                             ])}
+                            onMouseDown={onResizeDown("br")}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleTop,
+                            ])}
+                            onMouseDown={onResizeDown("t")}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleLeft,
+                            ])}
+                            onMouseDown={onResizeDown("l")}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleBottom,
+                            ])}
+                            onMouseDown={onResizeDown("b")}
+                        />
+                        <div
+                            className={joinStyles([
+                                styles.resizeHandle,
+                                styles.resizeHandleRight,
+                            ])}
+                            onMouseDown={onResizeDown("r")}
                         />
                     </>
                 )}
