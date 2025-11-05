@@ -5,8 +5,7 @@ import RoundButton from "../Common/Button/RoundButton/RoundButton.tsx";
 import styles from "./Slidebar.module.css";
 import { dispatch, getEditor } from "../../../store/editor";
 import { chooseSlide } from "../../../store/actions.ts";
-import { useEffect, useState } from "react";
-import {useSlideMove} from "./hooks/useSlideMove.ts";
+import { useSlideMove } from "./hooks/useSlideMove.ts";
 
 type Props = {
     currentSlideId: string | null;
@@ -16,21 +15,24 @@ export default function Slidebar({ currentSlideId }: Props) {
     const editor = getEditor();
     const { slides } = editor;
 
-    const {
-        dropIndex,
-        isDragging,
-        handleDragStart,
-        handleDragOver,
-    } = useSlideMove();
+    const { dropIndex, isDragging, draggedSlideId, handleDragStart, handleDragOver } =
+        useSlideMove();
 
     const handleSlideClick = (slide: Slide) => {
         dispatch(chooseSlide, slide.id);
     };
 
-    const [updateState, forceUpdate] = useState(0);
-    useEffect(() => {
-        forceUpdate(updateState + 1);
-    }, [editor]);
+    const visibleSlides = (() => {
+        if (!isDragging || dropIndex === null || !draggedSlideId) return slides;
+
+        const startIndex = slides.findIndex((s) => s.id === draggedSlideId);
+        if (startIndex === -1) return slides;
+
+        const copy = [...slides];
+        const [moved] = copy.splice(startIndex, 1);
+        copy.splice(dropIndex, 0, moved);
+        return copy;
+    })();
 
     return (
         <div className={styles.slidebar}>
@@ -45,12 +47,15 @@ export default function Slidebar({ currentSlideId }: Props) {
             </div>
 
             <div className={styles.slidebarList}>
-                {slides.map((slide, index) => (
-                    <div key={slide.id}>
-                        {isDragging && dropIndex === index && (
-                            <div className={styles.moveLine} />
-                        )}
-
+                {visibleSlides.map((slide, index) => (
+                    <div
+                        key={slide.id}
+                        className={`${styles.slideWrapper} ${
+                            isDragging && slide.id === draggedSlideId
+                                ? styles.draggingSlide
+                                : ""
+                        }`}
+                    >
                         <SlidePreview
                             slide={slide}
                             isSelected={slide.id === currentSlideId}
@@ -61,10 +66,6 @@ export default function Slidebar({ currentSlideId }: Props) {
                         />
                     </div>
                 ))}
-
-                {isDragging && dropIndex === slides.length && (
-                    <div className={styles.moveLine} />
-                )}
             </div>
         </div>
     );

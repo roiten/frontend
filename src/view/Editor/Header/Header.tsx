@@ -1,5 +1,5 @@
 import styles from "./Header.module.css";
-import joinStyles from "../../../utils/joinStyle.ts";
+import joinStyles from "../../../../utils/joinStyle.ts";
 import * as React from "react";
 
 type Props = {

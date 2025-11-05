@@ -5,7 +5,7 @@ import {
     SLIDE_HEIGHT,
     SLIDE_WIDTH,
 } from "../../../store/default.ts";
-import joinStyles from "../../../utils/joinStyle.ts";
+import joinStyles from "../../../../utils/joinStyle.ts";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
 
 type Props = {

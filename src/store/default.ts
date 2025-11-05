@@ -25,6 +25,7 @@ export const DEFAULT_PRESENTATION: Editor = {
     title: "New presentation",
     slides: [],
     currentSlide: null,
+    selectedObjects: null,
     author: "unknown",
     createdAt: new Date(),
     editedAt: new Date(),

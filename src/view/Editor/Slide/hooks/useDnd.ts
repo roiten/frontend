@@ -9,8 +9,8 @@ type DndArgs = {
     onFinishResize: (
         newX: number,
         newY: number,
-        newW: number,
-        newH: number,
+        newWidth: number,
+        newHeight: number,
     ) => void;
 };
 
@@ -45,7 +45,6 @@ export function useDnd(args: DndArgs): DndResult {
 
     const onMouseDown: MouseEventHandler<HTMLDivElement> = (event) => {
         event.preventDefault();
-        event.stopPropagation();
         setMode("move");
         setIsDragging(true);
         setOffset({ x: event.clientX - left, y: event.clientY - top });
@@ -55,7 +54,6 @@ export function useDnd(args: DndArgs): DndResult {
         (corner: ResizeCorner): MouseEventHandler<HTMLDivElement> =>
             (event) => {
                 event.preventDefault();
-                event.stopPropagation();
                 setMode(corner);
                 setIsDragging(true);
                 setOffset({ x: event.clientX, y: event.clientY });
@@ -63,7 +61,6 @@ export function useDnd(args: DndArgs): DndResult {
 
     const handleMouseUp = () => {
         if (!isDragging) return;
-
         setIsDragging(false);
 
         if (mode === "move") {
@@ -90,33 +87,33 @@ export function useDnd(args: DndArgs): DndResult {
 
                 if (mode.includes("l") || mode.includes("r")) {
                     setWidth((prev) => {
-                        let newW = prev;
-                        if (mode.includes("r")) newW = prev + dx;
-                        if (mode.includes("l")) newW = prev - dx;
+                        let newWidth = prev;
+                        if (mode.includes("r")) newWidth = prev + dx;
+                        if (mode.includes("l")) newWidth = prev - dx;
 
-                        newW = Math.max(newW, 10);
+                        newWidth = Math.max(newWidth, 10);
 
                         if (mode.includes("l")) {
                             setLeft((prevL) => prevL + dx);
                         }
 
-                        return newW;
+                        return newWidth;
                     });
                 }
 
                 if (mode.includes("t") || mode.includes("b")) {
                     setHeight((prev) => {
-                        let newH = prev;
-                        if (mode.includes("b")) newH = prev + dy;
-                        if (mode.includes("t")) newH = prev - dy;
+                        let newHeight = prev;
+                        if (mode.includes("b")) newHeight = prev + dy;
+                        if (mode.includes("t")) newHeight = prev - dy;
 
-                        newH = Math.max(newH, 10);
+                        newHeight = Math.max(newHeight, 10);
 
                         if (mode.includes("t")) {
                             setTop((prevT) => prevT + dy);
                         }
 
-                        return newH;
+                        return newHeight;
                     });
                 }
 

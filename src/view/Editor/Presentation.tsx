@@ -96,6 +96,7 @@ export default function Presentation({
             <Tools
                 selectedObjects={selectedObjects}
                 onToolAction={handleToolAction}
+                editor={editor}
             />
 
             <div className={styles.main}>

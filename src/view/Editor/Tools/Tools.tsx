@@ -1,11 +1,11 @@
 import styles from "./Tools.module.css";
-import { createEditTools, saveTools } from "./toolsConfig.ts";
+import { createEditTools } from "./toolsConfig.ts";
 import type { Tool } from "./toolsConfig.ts";
 import { handleEditFontSize } from "./handlers/handleEditFontSize.ts";
 import { handleEditFontColor } from "./handlers/handleEditFontColor.ts";
 import { handleEditFontFamily } from "./handlers/handleEditFontFamily.ts";
-import { getTextObjectById } from "../../../store/actions.ts";
-import { getEditor } from "../../../store/editor.ts";
+import { getTextObjectById, openPresentation } from "../../../store/actions.ts";
+import { dispatch } from "../../../store/editor.ts";
 import { useEffect, useState } from "react";
 import type { Editor } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
@@ -13,6 +13,7 @@ import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 type ToolsProps = {
     selectedObjects: string[] | null;
     onToolAction?: (toolName: string) => void;
+    editor: Editor;
 };
 
 function getSelectionInfo(selectedObjectIds: string[], editor: Editor) {
@@ -24,16 +25,47 @@ function getSelectionInfo(selectedObjectIds: string[], editor: Editor) {
     const allAreText = hasSelection && !hasNoText;
     return { textObjects, allAreText };
 }
-export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
-    const editTools = createEditTools(onToolAction);
-    const tools: Tool[] = [...saveTools, ...editTools];
 
-    const editor = getEditor();
+export default function Tools({ selectedObjects, onToolAction, editor }: ToolsProps) {
+
+    const [, setFile] = useState<File | null>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0] ?? null;
+        if (selectedFile) {
+            setFile(selectedFile);
+            readFileAsObject(selectedFile);
+        }
+    };
+
+    const readFileAsObject = (file: File) => {
+        const reader = new FileReader();
+
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                try {
+                    const fileContent = JSON.parse(event.target.result as string);
+                    processPresentationData(fileContent);
+                } catch (error) {
+                    console.error('Ошибка при парсинге файла:', error);
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const processPresentationData = (data: Editor) => {
+        console.log('Загруженные данные презентации:', data);
+        dispatch(openPresentation, data)
+    };
+
+    const editTools = createEditTools(onToolAction);
+    const tools: Tool[] = [...editTools];
+
     const selectedObjectIds = selectedObjects || [];
     const [tempFontSize, setTempFontSize] = useState<string>("");
 
     useEffect(() => {
-        const editor = getEditor();
         const { textObjects, allAreText } = getSelectionInfo(
             selectedObjectIds,
             editor,
@@ -43,7 +75,7 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
         } else {
             setTempFontSize("");
         }
-    }, [selectedObjectIds]);
+    }, [selectedObjectIds, editor]);
 
     const { textObjects, allAreText } = getSelectionInfo(
         selectedObjectIds,
@@ -68,6 +100,18 @@ export default function Tools({ selectedObjects, onToolAction }: ToolsProps) {
                     }}
                 />
             ))}
+            <div>
+                <label htmlFor="file-upload" className="upload-button">
+                    Загрузить презентацию
+                </label>
+                <input
+                    id="file-upload"
+                    type="file"
+                    accept=".json"
+                    onChange={handleFileChange}
+                    style={{ display: 'none' }}
+                />
+            </div>
             <form>
                 <select
                     name="font"

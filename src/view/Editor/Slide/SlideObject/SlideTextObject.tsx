@@ -6,7 +6,7 @@ import {
 } from "../../../../store/actions.ts";
 import type { Text } from "../../../../store/types.ts";
 import { useState, useRef, type JSX, useEffect } from "react";
-import joinStyles from "../../../../utils/joinStyle.ts";
+import joinStyles from "../../../../../utils/joinStyle.ts";
 import { useDnd } from "../hooks/useDnd.ts";
 import * as React from "react";
 import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
@@ -37,11 +37,11 @@ export default function SlideTextObject({
         onFinishMove: (newX, newY) => {
             handleMoveObject(slideId, obj, { newX, newY });
         },
-        onFinishResize: (newX, newY, newW, newH) => {
+        onFinishResize: (newX, newY, newWidth, newHeight) => {
             handleResizeObject({
                 slideId,
                 slideObject: obj,
-                size: { width: newW, height: newH },
+                size: { width: newWidth, height: newHeight },
                 position: { x: newX, y: newY },
             });
         },
@@ -77,14 +77,14 @@ export default function SlideTextObject({
             if (!element) return;
             element.focus();
 
-            const pos = document.caretPositionFromPoint(e.clientX, e.clientY);
-            if (pos) {
+            const position = document.caretPositionFromPoint(e.clientX, e.clientY);
+            if (position) {
                 const range = document.createRange();
-                range.setStart(pos.offsetNode, pos.offset);
+                range.setStart(position.offsetNode, position.offset);
                 range.collapse(true);
-                const sel = window.getSelection();
-                sel?.removeAllRanges();
-                sel?.addRange(range);
+                const selection = window.getSelection();
+                selection?.removeAllRanges();
+                selection?.addRange(range);
             }
         });
     };
@@ -127,9 +127,6 @@ export default function SlideTextObject({
                 left: `${left}px`,
                 width: `${width}px`,
                 height: `${height}px`,
-                display: "flex",
-                alignItems: "flex-start",
-                justifyContent: "flex-start",
             }}
         >
             <div
@@ -141,7 +138,6 @@ export default function SlideTextObject({
                 onMouseEnter={handleBorderMouseEnter}
                 onMouseLeave={handleBorderMouseLeave}
                 onMouseDown={isEditing ? () => {} : handleBorderMouseDown}
-                style={{ width: "100%", height: "100%" }}
             >
                 <div
                     ref={textRef}
@@ -159,22 +155,10 @@ export default function SlideTextObject({
                         textDecoration: obj.font.textDecoration,
                         userSelect: isEditing ? "text" : "none",
                         cursor: isEditing ? "text" : "default",
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word",
-                        boxSizing: "border-box",
-                        padding: "2px",
-                        width: "100%",
-                        height: "100%",
-                        display: "block",
-                        overflowWrap: "break-word",
-                        outline: "none",
                     }}
                     tabIndex={isSelected ? 0 : -1}
                     onMouseDown={handleMouseDown}
                     onBlur={handleBlur}
-                     // onMouseDown={(e) => {
-                     //     if (isEditing) e.stopPropagation(); // СОВЕРШЕННО ЗАБЫЛ ЧТО ПРИ onClick просиходит перерендер
-                     // }}
                     contentEditable={isEditing}
                     suppressContentEditableWarning
                 >

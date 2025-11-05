@@ -332,6 +332,10 @@ function clearSelectedObjects(pres: Editor): Editor {
     return { ...pres, selectedObjects: null, editedAt: new Date() };
 }
 
+function openPresentation(_currentEditor: Editor, newPres: Editor): Editor {
+    return { ...newPres };
+}
+
 export {
     setPresentationTitle,
     addSlide,
@@ -355,4 +359,5 @@ export {
     removeSelectedObject,
     clearSelectedObjects,
     getTextObjectById,
+    openPresentation,
 };

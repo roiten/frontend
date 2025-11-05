@@ -5,6 +5,7 @@ import {
 } from "../store/actions.ts";
 
 import type { Editor, Image, Text, Slide } from "../store/types.ts";
+import { DEFAULT_PRESENTATION } from "../store/default.ts";
 
 export function maxTest(): Editor {
     let maxPresentation: Editor = {
@@ -132,4 +133,8 @@ export function maxTest(): Editor {
     });
 
     return maxPresentation;
+}
+
+export function minTest(): Editor {
+    return DEFAULT_PRESENTATION
 }

@@ -1,7 +1,7 @@
 import type { Editor } from "./types.ts";
-import { maxTest } from "../tests/tests.ts";
+import { minTest } from "../tests/tests.ts";
 
-let editor: Editor = maxTest();
+let editor: Editor = minTest();
 let editorChangeHandler: ((editor: Editor) => void) | null = null;
 
 function getEditor() {

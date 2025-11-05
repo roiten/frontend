@@ -9,9 +9,15 @@ export type Tool = {
     action?: (...args: any) => void;
 };
 
-export const saveTools: Tool[] = [
-    { name: "Сохранить", icon: "/icons/floppy-disk.svg" },
-];
+export function createSaveTools(): Tool[] {
+    return [
+        {
+            name: "Сохранить",
+            icon: "/icons/floppy-disk.svg",
+            action: () => {}
+        },
+    ];
+}
 
 export function createEditTools(
     onToolAction?: (toolName: string) => void,

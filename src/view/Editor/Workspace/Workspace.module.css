@@ -24,6 +24,15 @@
 
 .slideObject {
     position: relative;
+    white-space: pre-wrap;
+    word-break: break-word;
+    box-sizing: border-box;
+    padding: 2px;
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow-wrap: break-word;
+    outline: none;
 }
 
 .slideObject:focus {
@@ -38,6 +47,8 @@
     position: relative;
     display: inline-block;
     padding: 6px;
+    width: 100%;
+    height: 100%;
 }
 
 .selectedBorder {
@@ -56,6 +67,9 @@
 
 .editableObject {
     position: absolute;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
 }
 
 .resizeHandle {

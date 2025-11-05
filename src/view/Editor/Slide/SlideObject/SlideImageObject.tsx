@@ -2,7 +2,7 @@ import styles from "../../Workspace/Workspace.module.css";
 import { type Image } from "../../../../store/types.ts";
 import { removeSlideObject } from "../../../../store/actions.ts";
 import { type JSX, useEffect } from "react";
-import joinStyles from "../../../../utils/joinStyle.ts";
+import joinStyles from "../../../../../utils/joinStyle.ts";
 import { dispatch } from "../../../../store/editor.ts";
 import { useDnd } from "../hooks/useDnd.ts";
 import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
@@ -30,12 +30,12 @@ export default function SlideImageObject({
             console.log("drag ended at", newX, newY);
             handleMoveObject(slideId, obj, { newX, newY });
         },
-        onFinishResize: (newX, newY, newW, newH) => {
-            console.log("resize ended:", newX, newY, newW, newH);
+        onFinishResize: (newX, newY, newWidth, newHeight) => {
+            console.log("resize ended:", newX, newY, newWidth, newHeight);
             handleResizeObject({
                 slideId,
                 slideObject: obj,
-                size: { width: newW, height: newH },
+                size: { width: newWidth, height: newHeight },
                 position: { x: newX, y: newY },
             });
         },
