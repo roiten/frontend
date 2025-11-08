@@ -46,3 +46,4 @@ export const DEFAULT_BACKGROUND: Background = {
 export const PREVIEW_WIDTH = 200;
 export const SLIDE_WIDTH = 1200;
 export const SLIDE_HEIGHT = 800;
+export const IMAGE_MIN_SIZE = 10;

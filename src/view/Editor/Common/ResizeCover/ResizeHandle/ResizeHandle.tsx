@@ -1,11 +1,7 @@
-import joinStyles from "../../../../../utils/joinStyle.ts";
-import styles from "./ResizeCover.module.css";
+import joinStyles from "../../../../../../utils/joinStyle.ts";
+import styles from "../ResizeCover.module.css";
 import type { MouseEventHandler } from "react";
-import type { ResizeCorner } from "./types.ts";
-
-type ResizeCoverProps = {
-    onResizeDown: (corner: ResizeCorner) => MouseEventHandler<HTMLDivElement>;
-};
+import type { ResizeCorner } from "../types.ts";
 
 function chooseResizeHandlerStyle(corner: ResizeCorner) {
     switch (corner) {
@@ -28,19 +24,23 @@ function chooseResizeHandlerStyle(corner: ResizeCorner) {
     }
 }
 
-function ResizeCover({ onResizeDown }: ResizeCoverProps) {
+type ResizeHandleProps = {
+    onResizeDown: (corner: ResizeCorner) => MouseEventHandler<HTMLDivElement>;
+    resizeCorner: ResizeCorner;
+};
+
+function ResizeHandle({ onResizeDown, resizeCorner }: ResizeHandleProps) {
     return (
         <>
             <div
                 className={joinStyles([
-                styles.resizeHandle,
-            chooseResizeHandlerStyle])}
-                onMouseDown={onResizeDown("tl")}
+                    styles.resizeHandle,
+                    chooseResizeHandlerStyle(resizeCorner),
+                ])}
+                onMouseDown={onResizeDown(resizeCorner)}
             />
         </>
     );
 }
 
-export {
-    ResizeCover,
-}
+export { ResizeHandle };

@@ -1,4 +1,6 @@
 import { type MouseEventHandler, useEffect, useState } from "react";
+import { IMAGE_MIN_SIZE } from "../../../../store/default.ts";
+import { type ResizeCorner } from "../../Common/ResizeCover/types.ts"
 
 type DndArgs = {
     startX: number;
@@ -9,12 +11,10 @@ type DndArgs = {
     onFinishResize: (
         newX: number,
         newY: number,
-        newWidth: number,
-        newHeight: number,
+        newW: number,
+        newH: number,
     ) => void;
 };
-
-type ResizeCorner = "tl" | "tr" | "bl" | "br" | "t" | "r" | "l" | "b";
 
 type DndResult = {
     top: number;
@@ -35,90 +35,111 @@ export function useDnd(args: DndArgs): DndResult {
         onFinishResize,
     } = args;
 
-    const [isDragging, setIsDragging] = useState(false);
-    const [mode, setMode] = useState<"move" | ResizeCorner | null>(null);
-    const [top, setTop] = useState(startY);
-    const [left, setLeft] = useState(startX);
-    const [width, setWidth] = useState(defaultWidth);
-    const [height, setHeight] = useState(defaultHeight);
-    const [offset, setOffset] = useState({ x: 0, y: 0 });
+    const [dragState, setDragState] = useState<{
+        isDragging: boolean;
+        mode: "move" | ResizeCorner | null;
+        offset: { x: number; y: number };
+        position: { x: number; y: number };
+        size: { w: number; h: number };
+    }>({
+        isDragging: false,
+        mode: null,
+        offset: { x: 0, y: 0 },
+        position: { x: startX, y: startY },
+        size: { w: defaultWidth, h: defaultHeight },
+    });
 
     const onMouseDown: MouseEventHandler<HTMLDivElement> = (event) => {
         event.preventDefault();
-        setMode("move");
-        setIsDragging(true);
-        setOffset({ x: event.clientX - left, y: event.clientY - top });
+        event.stopPropagation();
+        setDragState((prev) => ({
+            ...prev,
+            mode: "move",
+            isDragging: true,
+            offset: {
+                x: event.clientX - prev.position.x,
+                y: event.clientY - prev.position.y,
+            },
+        }));
     };
 
     const onResizeDown =
         (corner: ResizeCorner): MouseEventHandler<HTMLDivElement> =>
-            (event) => {
-                event.preventDefault();
-                setMode(corner);
-                setIsDragging(true);
-                setOffset({ x: event.clientX, y: event.clientY });
-            };
+        (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            setDragState((prev) => ({
+                ...prev,
+                mode: corner,
+                isDragging: true,
+                offset: { x: event.clientX, y: event.clientY },
+            }));
+        };
 
     const handleMouseUp = () => {
-        if (!isDragging) return;
-        setIsDragging(false);
+        if (!dragState.isDragging) return;
+
+        const { mode, position, size } = dragState;
+
+        setDragState((prev) => ({ ...prev, isDragging: false }));
 
         if (mode === "move") {
-            onFinishMove(left, top);
+            onFinishMove(position.x, position.y);
         } else if (mode) {
-            onFinishResize(left, top, width, height);
+            onFinishResize(position.x, position.y, size.w, size.h);
         }
 
-        setMode(null);
+        setDragState((prev) => ({ ...prev, mode: null }));
     };
 
     useEffect(() => {
-        if (!isDragging) return;
+        if (!dragState.isDragging) return;
 
         const handleMouseMove = (event: MouseEvent) => {
-            if (!mode) return;
+            setDragState((prev) => {
+                const { mode, offset, position, size } = prev;
+                if (!mode) return prev;
 
-            if (mode === "move") {
-                setLeft(event.clientX - offset.x);
-                setTop(event.clientY - offset.y);
-            } else {
-                const dx = event.clientX - offset.x;
-                const dy = event.clientY - offset.y;
+                if (mode === "move") {
+                    return {
+                        ...prev,
+                        position: {
+                            x: event.clientX - offset.x,
+                            y: event.clientY - offset.y,
+                        },
+                    };
+                } else {
+                    const dx = event.clientX - offset.x;
+                    const dy = event.clientY - offset.y;
+                    const newPos = { ...position };
+                    const newSize = { ...size };
 
-                if (mode.includes("l") || mode.includes("r")) {
-                    setWidth((prev) => {
-                        let newWidth = prev;
-                        if (mode.includes("r")) newWidth = prev + dx;
-                        if (mode.includes("l")) newWidth = prev - dx;
-
-                        newWidth = Math.max(newWidth, 10);
-
+                    if (mode.includes("l") || mode.includes("r")) {
+                        if (mode.includes("r")) newSize.w = size.w + dx;
                         if (mode.includes("l")) {
-                            setLeft((prevL) => prevL + dx);
+                            newSize.w = size.w - dx;
+                            newPos.x = position.x + dx;
                         }
+                        newSize.w = Math.max(newSize.w, IMAGE_MIN_SIZE);
+                    }
 
-                        return newWidth;
-                    });
-                }
-
-                if (mode.includes("t") || mode.includes("b")) {
-                    setHeight((prev) => {
-                        let newHeight = prev;
-                        if (mode.includes("b")) newHeight = prev + dy;
-                        if (mode.includes("t")) newHeight = prev - dy;
-
-                        newHeight = Math.max(newHeight, 10);
-
+                    if (mode.includes("t") || mode.includes("b")) {
+                        if (mode.includes("b")) newSize.h = size.h + dy;
                         if (mode.includes("t")) {
-                            setTop((prevT) => prevT + dy);
+                            newSize.h = size.h - dy;
+                            newPos.y = position.y + dy;
                         }
+                        newSize.h = Math.max(newSize.h, IMAGE_MIN_SIZE);
+                    }
 
-                        return newHeight;
-                    });
+                    return {
+                        ...prev,
+                        position: newPos,
+                        size: newSize,
+                        offset: { x: event.clientX, y: event.clientY },
+                    };
                 }
-
-                setOffset({ x: event.clientX, y: event.clientY });
-            }
+            });
         };
 
         window.addEventListener("mousemove", handleMouseMove);
@@ -128,22 +149,29 @@ export function useDnd(args: DndArgs): DndResult {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
         };
-    }, [isDragging, mode, offset.x, offset.y, onFinishMove, onFinishResize]);
+    }, [
+        dragState.isDragging,
+        dragState.mode,
+        dragState.offset,
+        onFinishMove,
+        onFinishResize,
+    ]);
 
     useEffect(() => {
-        if (isDragging) return;
+        if (dragState.isDragging) return;
 
-        setLeft(startX);
-        setTop(startY);
-        setWidth(defaultWidth);
-        setHeight(defaultHeight);
+        setDragState((prev) => ({
+            ...prev,
+            position: { x: startX, y: startY },
+            size: { w: defaultWidth, h: defaultHeight },
+        }));
     }, [startX, startY, defaultWidth, defaultHeight]);
 
     return {
-        top,
-        left,
-        width,
-        height,
+        top: dragState.position.y,
+        left: dragState.position.x,
+        width: dragState.size.w,
+        height: dragState.size.h,
         onMouseDown,
         onResizeDown,
     };

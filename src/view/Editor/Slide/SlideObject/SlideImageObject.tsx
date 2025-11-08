@@ -7,6 +7,7 @@ import { dispatch } from "../../../../store/editor.ts";
 import { useDnd } from "../hooks/useDnd.ts";
 import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
 import { handleResizeObject } from "../../Workspace/handlers/handleResizeObject.ts";
+import { ResizeCover } from "../../Common/ResizeCover/ResizeCover.tsx";
 
 type Props = {
     obj: Image;
@@ -27,15 +28,13 @@ export default function SlideImageObject({
         defaultWidth: obj.size.width,
         defaultHeight: obj.size.height,
         onFinishMove: (newX, newY) => {
-            console.log("drag ended at", newX, newY);
             handleMoveObject(slideId, obj, { newX, newY });
         },
-        onFinishResize: (newX, newY, newWidth, newHeight) => {
-            console.log("resize ended:", newX, newY, newWidth, newHeight);
+        onFinishResize: (newX, newY, newW, newH) => {
             handleResizeObject({
                 slideId,
                 slideObject: obj,
-                size: { width: newWidth, height: newHeight },
+                size: { width: newW, height: newH },
                 position: { x: newX, y: newY },
             });
         },
@@ -75,69 +74,11 @@ export default function SlideImageObject({
             <img
                 className={styles.picture}
                 draggable={!!onClick}
+                contentEditable={false}
                 src={obj.source}
                 alt="Картинка на слайде"
             />
-            {isSelected && (
-                <>
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleTopLeft,
-                        ])}
-                        onMouseDown={onResizeDown("tl")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleTopRight,
-                        ])}
-                        onMouseDown={onResizeDown("tr")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleBottomLeft,
-                        ])}
-                        onMouseDown={onResizeDown("bl")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleBottomRight,
-                        ])}
-                        onMouseDown={onResizeDown("br")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleTop,
-                        ])}
-                        onMouseDown={onResizeDown("t")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleLeft,
-                        ])}
-                        onMouseDown={onResizeDown("l")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleBottom,
-                        ])}
-                        onMouseDown={onResizeDown("b")}
-                    />
-                    <div
-                        className={joinStyles([
-                            styles.resizeHandle,
-                            styles.resizeHandleRight,
-                        ])}
-                        onMouseDown={onResizeDown("r")}
-                    />
-                </>
-            )}
+            {isSelected && (<ResizeCover onResizeDown={onResizeDown} /> )}
         </div>
     );
 }

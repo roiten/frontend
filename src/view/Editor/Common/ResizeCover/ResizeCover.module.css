@@ -1,0 +1,58 @@
+.resizeHandle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    background: blue;
+    border: 1px solid blue;
+    border-radius: 8px;
+    box-sizing: border-box;
+    z-index: 2;
+}
+
+.resizeHandleTopLeft {
+    top: -8px;
+    left: -8px;
+    cursor: nwse-resize;
+}
+
+.resizeHandleTopRight {
+    top: -8px;
+    right: -8px;
+    cursor: nesw-resize;
+}
+
+.resizeHandleBottomLeft {
+    bottom: -8px;
+    left: -8px;
+    cursor: nesw-resize;
+}
+
+.resizeHandleBottomRight {
+    bottom: -8px;
+    right: -8px;
+    cursor: nwse-resize;
+}
+
+.resizeHandleTop {
+    top: -8px;
+    left: 50%;
+    cursor: ns-resize;
+}
+
+.resizeHandleRight {
+    top: 50%;
+    right: -8px;
+    cursor: ew-resize;
+}
+
+.resizeHandleLeft {
+    top: 50%;
+    left: -8px;
+    cursor: ew-resize;
+}
+
+.resizeHandleBottom {
+    bottom: -8px;
+    left: 50%;
+    cursor: ns-resize;
+}
