@@ -25,20 +25,42 @@ function addSlide(pres: Editor, slide: Slide): Editor {
 }
 
 // Удаление слайда
-function removeSlide(pres: Editor, slideId: string): Editor {
-    const otherSlides = pres.slides.filter((s) => s.id !== slideId);
+function removeSlides(pres: Editor, slideIds: string[]): Editor {
+    const otherSlides = pres.slides.filter((s) => !slideIds.includes(s.id));
     return { ...pres, slides: otherSlides, editedAt: new Date() };
 }
 
 // Изменение позиции слайда
-function moveSlide(pres: Editor, slideId: string, newIndex: number): Editor {
-    const slides = [...pres.slides];
-    const oldIndex = slides.findIndex((s) => s.id === slideId);
-    if (oldIndex === -1) return pres;
+function moveSlide(pres: Editor, slidesIds: string[], newIndex: number): Editor {
+    const slides = pres.slides.map(slide => ({ ...slide }));
 
-    const [slide] = slides.splice(oldIndex, 1);
-    slides.splice(newIndex, 0, slide);
-    return { ...pres, slides, editedAt: new Date() };
+    const draggedSlides: Slide[] = [];
+    const indicesToRemove: number[] = [];
+
+    for (const id of slidesIds) {
+        const index = slides.findIndex(s => s.id === id);
+        if (index === -1) {
+            console.warn(`Slide with id "${id}" not found in moveSlide`);
+            continue;
+        }
+        draggedSlides.push({ ...slides[index] }); // ← клонируем каждый слайд!
+        indicesToRemove.push(index);
+    }
+
+    if (draggedSlides.length === 0) return pres;
+
+    const sortedRemoveIndices = [...indicesToRemove].sort((a, b) => b - a);
+    for (const index of sortedRemoveIndices) {
+        slides.splice(index, 1);
+    }
+
+    slides.splice(newIndex, 0, ...draggedSlides);
+
+    return {
+        ...pres,
+        slides,
+        editedAt: new Date(),
+    };
 }
 
 // Добавление объекта в слайд
@@ -340,7 +362,7 @@ export {
     setPresentationTitle,
     addSlide,
     createSlide,
-    removeSlide,
+    removeSlides,
     moveSlide,
     addSlideObject,
     removeSlideObject,

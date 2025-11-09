@@ -1,6 +1,7 @@
 import { dispatch, getEditor } from "../../../../store/editor.ts";
 import { addSlideObject } from "../../../../store/actions.ts";
 import { IMAGE_PRESETS } from "../../../../store/default.ts";
+import { v4 as uuid } from "uuid";
 
 function handlePasteImageUrl(url: string) {
     const editor = getEditor();
@@ -12,6 +13,7 @@ function handlePasteImageUrl(url: string) {
 
     console.log("New image url: ", url);
     dispatch(addSlideObject, slideId, {
+        id: uuid(),
         source: url,
         ...IMAGE_PRESETS,
     });

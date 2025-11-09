@@ -1,7 +1,5 @@
 import type {
     Editor,
-    // Text,
-    // Image,
     Background,
 } from "./types.ts";
 

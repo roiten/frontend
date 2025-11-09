@@ -1,6 +1,7 @@
 import styles from "./IslandModal.module.css";
 import { handlePasteImageUrl } from "../handlers/handlePasteImage.ts";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
+import { useState } from "react";
 
 type ImagePasteUrlModalProps = {
     slideId: string | null;
@@ -11,8 +12,13 @@ export default function ImagePasteUrlModal({
     slideId,
     onClose,
 }: ImagePasteUrlModalProps) {
+    const [imageUrl, setImageUrl] = useState<string>('');
+
     function handleApply() {
-        console.log("Pasted image by url to slide:", slideId);
+        console.log("Apply bg: to slide:", slideId);
+        if (imageUrl != "") {
+            handlePasteImageUrl(imageUrl);
+        }
         onClose();
     }
 
@@ -23,7 +29,7 @@ export default function ImagePasteUrlModal({
                     <span>URL изображения:</span>
                     <input
                         type="url"
-                        onChange={(e) => handlePasteImageUrl(e.target.value)}
+                        onChange={(e) => setImageUrl(e.target.value)}
                     />
                 </div>
             </div>

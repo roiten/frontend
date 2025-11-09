@@ -1,66 +1,76 @@
-import { useState, useEffect, useCallback, useRef } from "react";
-import { dispatch, getEditor } from "../../../../store/editor";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { dispatch } from "../../../../store/editor";
 import { moveSlide } from "../../../../store/actions.ts";
 
-export function useSlideMove() {
-    const [draggedSlideId, setDraggedSlideId] = useState<string | null>(null);
+export function useSlideMove(
+    selectedSlidesIds: string[],
+    setIsDragging: (value: boolean) => void,
+) {
+    const [draggedSlidesIds, setDraggedSlidesIds] = useState<string[]>([]);
     const [dropIndex, setDropIndex] = useState<number | null>(null);
     const lastHoverIndex = useRef<number | null>(null);
 
-    const cleanSelectedStates = useCallback(() => {
-        setDraggedSlideId(null);
-        setDropIndex(null);
-        lastHoverIndex.current = null;
-    }, []);
-
-    const handleDrop = useCallback(() => {
-        if (draggedSlideId && dropIndex !== null) {
-            dispatch(moveSlide, draggedSlideId, dropIndex);
+    const handleDragStart = useCallback(() => {
+        if (selectedSlidesIds.length > 0) {
+            setDraggedSlidesIds(selectedSlidesIds);
+            setDropIndex(null);
         }
-        cleanSelectedStates();
-    }, [draggedSlideId, dropIndex, cleanSelectedStates]);
+    }, [selectedSlidesIds]);
 
-    const handleDragStart = (slideId: string) => {
-        setDraggedSlideId(slideId);
-        setDropIndex(null);
-    };
+    const handleDragOver = useCallback((index: number) => {
+        if (draggedSlidesIds.length === 0) return;
 
-    const handleDragOver = (index: number) => {
-        const editor = getEditor();
-        if (!draggedSlideId) return;
-        const startIndex = editor.slides.findIndex((s) => s.id === draggedSlideId);
-        if (startIndex === -1) return;
-        const prevHover = lastHoverIndex.current;
+        const prev = lastHoverIndex.current;
         let newIndex = index;
 
-        if (prevHover !== null) {
-            if (index > prevHover) {
+        if (prev !== null) {
+            // Перемещение вниз (index > prev) → вставка ПОСЛЕ → dropIndex = index + 1
+            if (index > prev) {
                 newIndex = index + 1;
-            } else if (index < prevHover) {
+            }
+            // Перемещение вверх (index < prev) → вставка ДО → dropIndex = index
+            else if (index < prev) {
                 newIndex = index;
             }
+            // Если index === prev — ничего не меняем
         }
 
         lastHoverIndex.current = index;
         setDropIndex(newIndex);
-    };
+    }, [draggedSlidesIds]);
 
+    const handleDrop = useCallback(() => {
+        if (draggedSlidesIds.length === 0 || dropIndex === null) {
+            setDraggedSlidesIds([]);
+            setDropIndex(null);
+            lastHoverIndex.current = null;
+            setIsDragging(false);
+            return;
+        }
+        dispatch(moveSlide, draggedSlidesIds, dropIndex);
+
+        // Сброс
+        setDraggedSlidesIds([]);
+        setDropIndex(null);
+        lastHoverIndex.current = null;
+        setIsDragging(false);
+    }, [draggedSlidesIds, dropIndex, setIsDragging]);
+
+    // Глобальный mouseup
     useEffect(() => {
-        if (!draggedSlideId) return;
+        if (draggedSlidesIds.length === 0) return;
 
         const onMouseUp = () => handleDrop();
-
         window.addEventListener("mouseup", onMouseUp);
-        return () => {
-            window.removeEventListener("mouseup", onMouseUp);
-        };
-    }, [draggedSlideId, handleDrop]);
+        return () => window.removeEventListener("mouseup", onMouseUp);
+    }, [draggedSlidesIds, handleDrop]);
 
     return {
         dropIndex,
-        draggedSlideId,
-        isDragging: draggedSlideId !== null,
+        draggedSlidesIds,
+        isDragging: draggedSlidesIds.length > 0,
         handleDragStart,
         handleDragOver,
+        handleDrop,
     };
 }

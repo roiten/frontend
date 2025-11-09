@@ -23,7 +23,7 @@
 }
 
 .slideObject {
-    position: relative;
+    position: absolute;
     white-space: pre-wrap;
     word-break: break-word;
     box-sizing: border-box;

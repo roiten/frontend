@@ -8,13 +8,12 @@ import {
 import joinStyles from "../../../../utils/joinStyle.ts";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
 
-type Props = {
+type SlidePreviewProps = {
     slide: Slide;
-    index: number;
     isSelected: boolean;
-    onClick: () => void;
-    onMouseDown?: () => void;
-    onMouseEnter?: () => void;
+    index: number;
+    onClick: (e: React.MouseEvent<HTMLDivElement>) => void;
+    onMouseDown: (e: React.MouseEvent<HTMLDivElement>) => void;
 };
 
 export default function SlidePreview({
@@ -23,21 +22,22 @@ export default function SlidePreview({
     isSelected,
     onClick,
     onMouseDown,
-    onMouseEnter,
-}: Props) {
+}: SlidePreviewProps) {
     const scale = PREVIEW_WIDTH / SLIDE_WIDTH;
 
     return (
         <div
-            className={
+            className={joinStyles([
                 isSelected
                     ? joinStyles([styles.thumbnail, styles.thumbnailSelected])
-                    : styles.thumbnail
-            }
+                    : styles.thumbnail,
+            ])}
             onClick={onClick}
+            onMouseDown={(e) => {
+                e.preventDefault();
+                onMouseDown(e);
+            }}
             style={{ width: PREVIEW_WIDTH }}
-            onMouseDown={onMouseDown}
-            onMouseEnter={onMouseEnter}
         >
             <div
                 style={{
@@ -45,12 +45,8 @@ export default function SlidePreview({
                     height: SLIDE_HEIGHT * scale,
                 }}
             >
-                <SlideRenderer
-                    slide={slide}
-                    scale={scale}
-                />
+                <SlideRenderer slide={slide} scale={scale} />
             </div>
-
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>
     );

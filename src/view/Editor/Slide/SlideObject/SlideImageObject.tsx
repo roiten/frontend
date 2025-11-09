@@ -78,7 +78,7 @@ export default function SlideImageObject({
                 src={obj.source}
                 alt="Картинка на слайде"
             />
-            {isSelected && (<ResizeCover onResizeDown={onResizeDown} /> )}
+            {isSelected && <ResizeCover onResizeDown={onResizeDown} />}
         </div>
     );
 }

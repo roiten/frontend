@@ -100,9 +100,7 @@ export default function Presentation({
             />
 
             <div className={styles.main}>
-                <Slidebar
-                    currentSlideId={editor.currentSlide}
-                />
+                <Slidebar />
                 <Workspace
                     slide={currentSlide}
                     selectedObjects={selectedObjects}

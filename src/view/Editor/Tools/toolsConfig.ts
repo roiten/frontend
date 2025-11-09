@@ -1,5 +1,5 @@
 import { dispatch } from "../../../store/editor.ts";
-import { addSlide, removeSlide } from "../../../store/actions.ts";
+import { addSlide, removeSlides } from "../../../store/actions.ts";
 import { handleAddText } from "./handlers/handleAddText.ts";
 import { v4 as uuid } from "uuid";
 
@@ -57,8 +57,8 @@ export const slidebarTools: Tool[] = [
     {
         name: "Удалить слайд",
         icon: "/icons/trash-simple.svg",
-        action: (slideId: string) => {
-            dispatch(removeSlide, slideId);
+        action: (slideIds: string[]) => {
+            dispatch(removeSlides, slideIds);
         },
     },
 ];
