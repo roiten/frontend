@@ -1,32 +1,25 @@
+import { useDispatch, useSelector } from "react-redux";
 import styles from "./Editor.module.css";
-import { useState } from "react";
 import type { Editor, ModalType } from "../../store/types.ts";
-
 import Header from "./Header/Header.tsx";
 import Infobar from "./Infobar/Infobar.tsx";
 import Slidebar from "./Slidebar/Slidebar.tsx";
 import Tools from "./Tools/Tools.tsx";
 import Workspace from "./Workspace/Workspace.tsx";
-import { type JSX } from "react";
+import { type JSX, useCallback, useState } from "react";
 import Modal from "./Modal/Modal.tsx";
 import BackgroundModal from "./Modal/modals/BackgroundModal.tsx";
 import ImagePasteUrlModal from "./Modal/modals/ImagePasteUrlModal.tsx";
 import {
-    handleClearSelection,
-    handleSelectObject,
-} from "./Workspace/handlers/handleSelectObject.ts";
+    addSelectedObject,
+    clearSelectedObjects,
+    removeSelectedObject,
+} from "../../store/actionCreators.ts";
+import * as React from "react";
 
-type PresentationProps = {
-    editor: Editor;
-};
-
-export default function Presentation({
-    editor,
-}: PresentationProps): JSX.Element {
-    const currentSlide = editor.slides.find(
-        (s) => s.id === editor.currentSlide,
-    );
-    const selectedObjects = editor.selectedObjects;
+export default function Presentation(): JSX.Element {
+    const editor = useSelector((state: Editor) => state);
+    const dispatch = useDispatch();
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [currentModal, setCurrentModal] = useState<ModalType>(null);
@@ -50,30 +43,16 @@ export default function Presentation({
                 openModal("image-url");
                 break;
             default:
-                console.log(
-                    "Выбран инструмент:",
-                    toolName,
-                    "действие не назначено",
-                );
+                console.warn(toolName, "действие не назначено");
         }
     }
 
     function getModalContent() {
         switch (currentModal) {
             case "background-color":
-                return (
-                    <BackgroundModal
-                        slideId={editor.currentSlide}
-                        onClose={closeModal}
-                    />
-                );
+                return <BackgroundModal onClose={closeModal} />;
             case "image-url":
-                return (
-                    <ImagePasteUrlModal
-                        slideId={editor.currentSlide}
-                        onClose={closeModal}
-                    />
-                );
+                return <ImagePasteUrlModal onClose={closeModal} />;
             default:
                 return null;
         }
@@ -90,20 +69,35 @@ export default function Presentation({
         }
     }
 
+    const handleSelectObject = useCallback(
+        (objectId: string, isSelected: boolean) => {
+            if (isSelected) {
+                dispatch(addSelectedObject(objectId));
+            } else {
+                dispatch(removeSelectedObject(objectId));
+            }
+        },
+        [dispatch],
+    );
+
+    const handleClearSelection = useCallback(
+        (e: React.MouseEvent) => {
+            if (e.target === e.currentTarget) {
+                e.stopPropagation();
+                dispatch(clearSelectedObjects());
+            }
+        },
+        [dispatch],
+    );
+
     return (
         <div className={styles.editor}>
-            <Header title={editor.title} />
-            <Tools
-                selectedObjects={selectedObjects}
-                onToolAction={handleToolAction}
-                editor={editor}
-            />
+            <Header />
+            <Tools onToolAction={handleToolAction} />
 
             <div className={styles.main}>
                 <Slidebar />
                 <Workspace
-                    slide={currentSlide}
-                    selectedObjects={selectedObjects}
                     onSelectObject={handleSelectObject}
                     onClearSelection={handleClearSelection}
                 />

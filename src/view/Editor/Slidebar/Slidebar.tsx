@@ -1,15 +1,17 @@
-import { slidebarTools } from "../Tools/toolsConfig.ts";
 import SlidePreview from "./SlidePreview.tsx";
 import RoundButton from "../Common/Button/RoundButton/RoundButton.tsx";
 import styles from "./Slidebar.module.css";
-import { dispatch, getEditor } from "../../../store/editor";
-import { chooseSlide } from "../../../store/actions.ts";
+import { addSlide, removeSlides, chooseSlide } from "../../../store/actionCreators.ts";
 import { useSlideMove } from "./hooks/useSlideMove.ts";
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import type { Editor, Slide } from "../../../store/types.ts";
+import { v4 as uuid } from "uuid";
 
 export default function Slidebar() {
-    const editor = getEditor();
+    const editor = useSelector((state: Editor) => state);
     const { slides } = editor;
+    const dispatch = useDispatch();
 
     const [selectedSlidesIds, setSelectedSlidesIds] = useState<string[]>([]);
     const [isDragging, setIsDragging] = useState(false);
@@ -22,14 +24,37 @@ export default function Slidebar() {
         handleDrop,
     } = useSlideMove(selectedSlidesIds, setIsDragging);
 
-    // Очистка выделения при клике вне слайдов (на пустое место)
+    const slidebarTools = [
+        {
+            name: "Добавить новый слайд",
+            icon: "/icons/plus.svg",
+            action: () => {
+                const newSlide: Slide = {
+                    id: uuid(),
+                    content: [],
+                    background: { type: 'color', color: 'white' },
+                };
+                dispatch(addSlide(newSlide));
+            },
+        },
+        {
+            name: "Удалить слайд",
+            icon: "/icons/trash-simple.svg",
+            action: () => {
+                if (selectedSlidesIds.length > 0) {
+                    dispatch(removeSlides(selectedSlidesIds));
+                    setSelectedSlidesIds([]);
+                }
+            },
+        },
+    ];
+
     const handleBackgroundClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.target === e.currentTarget) {
             setSelectedSlidesIds([]);
         }
     };
 
-    // Обработка клика по слайду
     const handleSlideClick = (
         slideId: string,
         event: React.MouseEvent<HTMLDivElement>,
@@ -39,14 +64,12 @@ export default function Slidebar() {
         const isShift = event.shiftKey;
 
         if (isCtrl) {
-            // Ctrl+Click — добавление/удаление из выделения
             setSelectedSlidesIds((prev) =>
                 prev.includes(slideId)
                     ? prev.filter((id) => id !== slideId)
                     : [...prev, slideId],
             );
         } else if (isShift && selectedSlidesIds.length > 0) {
-            // Shift+Click — выделение диапазона
             const lastSelectedIndex = slides.findIndex(
                 (s) => s.id === selectedSlidesIds[selectedSlidesIds.length - 1],
             );
@@ -55,15 +78,11 @@ export default function Slidebar() {
             const range = slides.slice(start, end + 1).map((s) => s.id);
             setSelectedSlidesIds(range);
         } else if (!isDragging) {
-            // Обычный клик — выбор одного слайда
             setSelectedSlidesIds([slideId]);
-            //необходимо не выбирать слайд пока пользователь не отпустит кнопку мыши (при перемещении слайда), как в powerpoint
-            //ещё при выбранном слайде 1 (выделены 3 и 4), при попытке перемещения позиции, слайд 1 почему то тоже оказывается в числе двигаемых
-            dispatch(chooseSlide, slideId);
+            dispatch(chooseSlide(slideId));
         }
     };
 
-    // Визуализация слайдов с учётом перетаскивания
     const visibleSlides = (() => {
         if (!isDragging || dropIndex === null || draggedSlidesIds.length === 0)
             return slides;
@@ -88,7 +107,7 @@ export default function Slidebar() {
                     <RoundButton
                         key={tool.name}
                         tool={tool}
-                        onClick={() => tool.action?.(selectedSlidesIds)}
+                        onClick={() => tool.action?.()}
                     />
                 ))}
             </div>
@@ -117,7 +136,7 @@ export default function Slidebar() {
                                         handleDragStart();
                                         setIsDragging(true);
                                     }
-                                } }
+                                }}
                             />
                         </div>
                     );

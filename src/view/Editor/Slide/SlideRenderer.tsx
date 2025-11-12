@@ -2,6 +2,7 @@ import type { Slide, SlideObject } from "../../../store/types.ts";
 import SlideTextObject from "./SlideObject/SlideTextObject.tsx";
 import SlideImageObject from "./SlideObject/SlideImageObject.tsx";
 import styles from "../Workspace/Workspace.module.css";
+import * as React from "react";
 
 type Props = {
     slide: Slide;

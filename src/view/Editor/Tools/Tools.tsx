@@ -1,22 +1,30 @@
 import styles from "./Tools.module.css";
-import { createEditTools } from "./toolsConfig.ts";
-import type { Tool } from "./toolsConfig.ts";
-import { handleEditFontSize } from "./handlers/handleEditFontSize.ts";
-import { handleEditFontColor } from "./handlers/handleEditFontColor.ts";
-import { handleEditFontFamily } from "./handlers/handleEditFontFamily.ts";
-import { getTextObjectById, openPresentation } from "../../../store/actions.ts";
-import { dispatch } from "../../../store/editor.ts";
-import { useEffect, useState } from "react";
-import type { Editor } from "../../../store/types.ts";
+import { useEffect, useState, useCallback } from "react";
+import type { Editor, SlideObject } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
+import { useDispatch, useSelector } from "react-redux";
+import {
+    addSlideObject,
+    openPresentation,
+    setFontFamily,
+    setTextColor,
+    setTextSize,
+} from "../../../store/actionCreators.ts";
+import { TEXT_PRESETS } from "../../../store/default.ts";
+import { v4 as uuid } from 'uuid';
+import { getTextObjectById } from "../../../store/selectors.ts";
 
-type ToolsProps = {
-    selectedObjects: string[] | null;
-    onToolAction?: (toolName: string) => void;
-    editor: Editor;
+type Tool = {
+    name: string;
+    icon?: string;
+    action?: () => void;
 };
 
-function getSelectionInfo(selectedObjectIds: string[], editor: Editor) {
+type ToolsProps = {
+    onToolAction?: (toolName: string) => void;
+};
+
+function getTextSelectionInfo(selectedObjectIds: string[], editor: Editor) {
     const hasSelection = selectedObjectIds.length > 0;
     const textObjects = selectedObjectIds.map((id) =>
         getTextObjectById(editor, id),
@@ -26,9 +34,80 @@ function getSelectionInfo(selectedObjectIds: string[], editor: Editor) {
     return { textObjects, allAreText };
 }
 
-export default function Tools({ selectedObjects, onToolAction, editor }: ToolsProps) {
+export default function Tools({ onToolAction }: ToolsProps) {
+    const editor = useSelector((state: Editor) => state);
+    const selectedObjectIds = editor.selectedObjects || [];
+    const dispatch = useDispatch();
 
     const [, setFile] = useState<File | null>(null);
+    const [tempFontSize, setTempFontSize] = useState<string>("");
+
+    const handleAddText = useCallback(() => {
+        const slideId = editor.currentSlide;
+        if (!slideId) return;
+
+        const slide = editor.slides.find((s) => s.id === slideId);
+        if (!slide) return;
+
+        const newText: SlideObject = {
+            id: uuid(),
+            ...TEXT_PRESETS,
+        };
+        dispatch(addSlideObject(slideId, newText));
+    }, [editor.currentSlide, editor.slides, dispatch]);
+
+    const handleEditFontSize = useCallback(
+        (textIds: string[], size: number) => {
+            const slideId = editor.currentSlide;
+            if (!slideId) return;
+            const slide = editor.slides.find((s) => s.id === slideId);
+            if (!slide) return;
+            textIds.forEach((id) => dispatch(setTextSize(slideId, id, size)));
+        },
+        [editor.currentSlide, editor.slides, dispatch],
+    );
+
+    const handleEditFontFamily = useCallback(
+        (textIds: string[], family: string) => {
+            const slideId = editor.currentSlide;
+            if (!slideId) return;
+            const slide = editor.slides.find((s) => s.id === slideId);
+            if (!slide) return;
+            textIds.forEach((id) =>
+                dispatch(setFontFamily(slideId, id, family)),
+            );
+        },
+        [editor.currentSlide, editor.slides, dispatch],
+    );
+
+    const handleEditFontColor = useCallback(
+        (textIds: string[], color: string) => {
+            const slideId = editor.currentSlide;
+            if (!slideId) return;
+            const slide = editor.slides.find((s) => s.id === slideId);
+            if (!slide) return;
+            textIds.forEach((id) => dispatch(setTextColor(slideId, id, color)));
+        },
+        [editor.currentSlide, editor.slides, dispatch],
+    );
+
+    const tools: Tool[] = [
+        {
+            name: "Новый текст",
+            icon: "/icons/text-t.svg",
+            action: handleAddText,
+        },
+        {
+            name: "Фон",
+            icon: "/icons/wall.svg",
+            action: () => onToolAction?.("background"),
+        },
+        {
+            name: "URL-картинка",
+            icon: "/icons/shapes.svg",
+            action: () => onToolAction?.("image-url"),
+        },
+    ];
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0] ?? null;
@@ -40,33 +119,23 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
 
     const readFileAsObject = (file: File) => {
         const reader = new FileReader();
-
         reader.onload = (event) => {
             if (event.target?.result) {
                 try {
-                    const fileContent = JSON.parse(event.target.result as string);
-                    processPresentationData(fileContent);
+                    const fileContent = JSON.parse(
+                        event.target.result as string,
+                    );
+                    dispatch(openPresentation(fileContent));
                 } catch (error) {
-                    console.error('Ошибка при парсинге файла:', error);
+                    console.error("Ошибка при парсинге файла:", error);
                 }
             }
         };
         reader.readAsText(file);
     };
 
-    const processPresentationData = (data: Editor) => {
-        console.log('Загруженные данные презентации:', data);
-        dispatch(openPresentation, data)
-    };
-
-    const editTools = createEditTools(onToolAction);
-    const tools: Tool[] = [...editTools];
-
-    const selectedObjectIds = selectedObjects || [];
-    const [tempFontSize, setTempFontSize] = useState<string>("");
-
     useEffect(() => {
-        const { textObjects, allAreText } = getSelectionInfo(
+        const { textObjects, allAreText } = getTextSelectionInfo(
             selectedObjectIds,
             editor,
         );
@@ -77,11 +146,10 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
         }
     }, [selectedObjectIds, editor]);
 
-    const { textObjects, allAreText } = getSelectionInfo(
+    const { textObjects, allAreText } = getTextSelectionInfo(
         selectedObjectIds,
         editor,
     );
-
     const fontFamily =
         allAreText && textObjects.length === 1
             ? textObjects[0]!.font.family
@@ -89,17 +157,14 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
 
     return (
         <div className={styles.tools}>
-            {tools.map((tool: Tool) => (
+            {tools.map((tool) => (
                 <SquareButton
                     key={tool.name}
                     tool={tool}
-                    onClick={() => {
-                        if (tool.action) {
-                            tool.action();
-                        }
-                    }}
+                    onClick={() => tool.action?.()}
                 />
             ))}
+
             <div>
                 <label htmlFor="file-upload" className="upload-button">
                     Загрузить презентацию
@@ -109,9 +174,10 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
                     type="file"
                     accept=".json"
                     onChange={handleFileChange}
-                    style={{ display: 'none' }}
+                    style={{ display: "none" }}
                 />
             </div>
+
             <form>
                 <select
                     name="font"
@@ -127,12 +193,13 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
                         }
                     }}
                 >
-                    <option></option>
-                    <option value="Times New Roman">Serif</option>
+                    <option value="">—</option>
+                    <option value="Times New Roman">Times New Roman</option>
                     <option value="Segoe UI">Segoe UI</option>
                     <option value="Comic Sans MS">Comic Sans MS</option>
                     <option value="Calibri">Calibri</option>
                     <option value="Arial">Arial</option>
+                    <option value="Roboto">Roboto</option>
                 </select>
             </form>
 
@@ -143,20 +210,24 @@ export default function Tools({ selectedObjects, onToolAction, editor }: ToolsPr
                 onChange={(e) => {
                     const input = e.currentTarget.value;
                     setTempFontSize(input);
-
-                    if (input === "") {
-                        return;
-                    }
+                    if (input === "") return;
                     const value = Number(input);
                     if (allAreText && !isNaN(value) && value > 0) {
                         handleEditFontSize(selectedObjectIds, value);
                     }
                 }}
+                min="1"
+                step="1"
             />
 
             <input
                 type="color"
                 disabled={!allAreText}
+                value={
+                    allAreText && textObjects.length === 1
+                        ? textObjects[0]!.font.color
+                        : "#000000"
+                }
                 onChange={(e) => {
                     if (allAreText) {
                         handleEditFontColor(

@@ -1,22 +1,45 @@
 import styles from "./IslandModal.module.css";
-import {
-    handleEditSlideBackgroundColor,
-    handleEditSlideBackgroundImage,
-} from "../handlers/handleEditSlideBackground.ts";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { setSlideBackground } from "../../../../store/actionCreators.ts";
+import type { Editor } from "../../../../store/types.ts";
 
 type BackgroundModalProps = {
-    slideId: string | null;
     onClose: () => void;
 };
 
-export default function BackgroundModal({
-    slideId,
-    onClose,
-}: BackgroundModalProps) {
+export default function BackgroundModal({ onClose }: BackgroundModalProps) {
+    const editor = useSelector((state: Editor) => state);
+    const dispatch = useDispatch();
     const [colorBackground, setColorBackground] = useState<string>("white");
     const [urlBackground, setUrlBackground] = useState<string>("");
+
+    const handleEditSlideBackgroundColor = (color: string) => {
+        const slideId = editor.currentSlide;
+        if (!slideId) return;
+
+        const slide = editor.slides.find((s) => s.id === slideId);
+        if (!slide) return;
+
+        dispatch(setSlideBackground(slideId, { type: "color", color: color }));
+    };
+
+    const handleEditSlideBackgroundImage = (url: string) => {
+        const slideId = editor.currentSlide;
+        if (!slideId) return;
+
+        const slide = editor.slides.find((s) => s.id === slideId);
+        if (!slide) return;
+
+        dispatch(
+            setSlideBackground(slideId, {
+                type: "picture",
+                source: url,
+                transparency: 1,
+            }),
+        );
+    };
 
     function reset() {
         setColorBackground("white");
@@ -24,7 +47,6 @@ export default function BackgroundModal({
     }
 
     function handleApply() {
-        console.log("Apply bg: to slide:", slideId);
         if (urlBackground != "") {
             handleEditSlideBackgroundImage(urlBackground);
         } else {

@@ -1,5 +1,5 @@
 import joinStyles from "../../../../../../utils/joinStyle.ts";
-import styles from "../ResizeCover.module.css";
+import styles from "./ResizeHandle.module.css";
 import type { MouseEventHandler } from "react";
 import type { ResizeCorner } from "../types.ts";
 

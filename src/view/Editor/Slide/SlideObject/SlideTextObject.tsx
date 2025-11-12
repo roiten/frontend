@@ -1,17 +1,17 @@
 import styles from "../../Workspace/Workspace.module.css";
-import { dispatch } from "../../../../store/editor.ts";
 import {
     removeSlideObject,
+    setObjectPositionCoordinates,
+    setObjectPositionSize,
     setTextDescription,
-} from "../../../../store/actions.ts";
-import type { Text } from "../../../../store/types.ts";
+} from "../../../../store/actionCreators.ts";
+import type { SlideObject, Text } from "../../../../store/types.ts";
 import { useState, useRef, type JSX, useEffect } from "react";
 import joinStyles from "../../../../../utils/joinStyle.ts";
 import { useDnd } from "../hooks/useDnd.ts";
 import * as React from "react";
-import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
-import { handleResizeObject } from "../../Workspace/handlers/handleResizeObject.ts";
 import { ResizeCover } from "../../Common/ResizeCover/ResizeCover.tsx";
+import { useDispatch } from "react-redux";
 
 type Props = {
     obj: Text;
@@ -29,6 +29,7 @@ export default function SlideTextObject({
     const [isEditing, setIsEditing] = useState(false);
     const [isBorderHovered, setIsBorderHovered] = useState(false);
     const textRef = useRef<HTMLDivElement>(null);
+    const dispatch = useDispatch();
 
     const { top, left, width, height, onMouseDown, onResizeDown } = useDnd({
         startX: obj.position.x,
@@ -52,7 +53,7 @@ export default function SlideTextObject({
         const handleKeyDown = (event: KeyboardEvent) => {
             if (isSelected && event.key === "Delete" && !isEditing) {
                 event.preventDefault();
-                dispatch(removeSlideObject, slideId, obj.id);
+                dispatch(removeSlideObject(slideId, obj.id));
             }
         };
         document.addEventListener("keydown", handleKeyDown);
@@ -60,6 +61,33 @@ export default function SlideTextObject({
             document.removeEventListener("keydown", handleKeyDown);
         };
     }, [isSelected, isEditing, slideId, obj.id]);
+
+    const handleMoveObject = (
+        slideId: string,
+        slideObject: SlideObject,
+        position: { newX: number; newY: number },
+    ) => {
+        dispatch(
+            setObjectPositionCoordinates(slideId, slideObject, {
+                x: position.newX,
+                y: position.newY,
+            }),
+        );
+    };
+
+    const handleResizeObject = ({
+                                    slideId,
+                                    slideObject,
+                                    size,
+                                    position,
+                                }: {
+        slideId: string;
+        slideObject: SlideObject;
+        size: { width: number; height: number };
+        position: { x: number; y: number };
+    }) => {
+        dispatch(setObjectPositionSize(slideId, slideObject, position, size));
+    };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         if (!isSelected) {
@@ -95,11 +123,11 @@ export default function SlideTextObject({
             setIsEditing(false);
             const newText = e.currentTarget.innerText;
             if (newText !== obj.description) {
-                dispatch(setTextDescription, {
+                dispatch(setTextDescription(
                     slideId,
-                    textId: obj.id,
-                    description: newText,
-                });
+                    obj.id,
+                    newText,
+                ));
             }
         }
     };

@@ -1,19 +1,14 @@
-import { createRoot } from "react-dom/client";
-import App from "./App";
-import { getEditor, addEditorChangeHandler } from "./store/editor";
+import { createRoot } from 'react-dom/client';
+import App from './App';
+import { Provider } from 'react-redux';
+import { store } from './store';
 
-const rootEl = document.getElementById("root");
-if (!rootEl) throw new Error("Root element not found");
+const rootEl = document.getElementById('root');
+if (!rootEl) throw new Error('Root element not found');
 
 const root = createRoot(rootEl);
-
-const render = () => {
-    root.render(
-        <>
-            <App editor={getEditor()} />
-        </>,
-    );
-};
-
-addEditorChangeHandler(render);
-render();
+root.render(
+    <Provider store={store}>
+        <App />
+    </Provider>
+);

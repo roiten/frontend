@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { dispatch } from "../../../../store/editor";
-import { moveSlide } from "../../../../store/actions.ts";
+import { moveSlide } from "../../../../store/actionCreators.ts";
+import { useDispatch } from "react-redux";
 
 export function useSlideMove(
     selectedSlidesIds: string[],
     setIsDragging: (value: boolean) => void,
 ) {
+    const dispatch = useDispatch();
     const [draggedSlidesIds, setDraggedSlidesIds] = useState<string[]>([]);
     const [dropIndex, setDropIndex] = useState<number | null>(null);
     const lastHoverIndex = useRef<number | null>(null);
@@ -24,15 +25,12 @@ export function useSlideMove(
         let newIndex = index;
 
         if (prev !== null) {
-            // Перемещение вниз (index > prev) → вставка ПОСЛЕ → dropIndex = index + 1
             if (index > prev) {
                 newIndex = index + 1;
             }
-            // Перемещение вверх (index < prev) → вставка ДО → dropIndex = index
             else if (index < prev) {
                 newIndex = index;
             }
-            // Если index === prev — ничего не меняем
         }
 
         lastHoverIndex.current = index;
@@ -47,16 +45,14 @@ export function useSlideMove(
             setIsDragging(false);
             return;
         }
-        dispatch(moveSlide, draggedSlidesIds, dropIndex);
+        dispatch(moveSlide(draggedSlidesIds, dropIndex));
 
-        // Сброс
         setDraggedSlidesIds([]);
         setDropIndex(null);
         lastHoverIndex.current = null;
         setIsDragging(false);
     }, [draggedSlidesIds, dropIndex, setIsDragging]);
 
-    // Глобальный mouseup
     useEffect(() => {
         if (draggedSlidesIds.length === 0) return;
 

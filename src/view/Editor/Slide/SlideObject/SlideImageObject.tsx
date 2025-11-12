@@ -1,13 +1,15 @@
 import styles from "../../Workspace/Workspace.module.css";
-import { type Image } from "../../../../store/types.ts";
-import { removeSlideObject } from "../../../../store/actions.ts";
+import { type Image, type SlideObject } from "../../../../store/types.ts";
+import {
+    removeSlideObject,
+    setObjectPositionCoordinates,
+    setObjectPositionSize,
+} from "../../../../store/actionCreators.ts";
 import { type JSX, useEffect } from "react";
 import joinStyles from "../../../../../utils/joinStyle.ts";
-import { dispatch } from "../../../../store/editor.ts";
 import { useDnd } from "../hooks/useDnd.ts";
-import { handleMoveObject } from "../../Workspace/handlers/handleMoveObject.ts";
-import { handleResizeObject } from "../../Workspace/handlers/handleResizeObject.ts";
 import { ResizeCover } from "../../Common/ResizeCover/ResizeCover.tsx";
+import { useDispatch } from "react-redux";
 
 type Props = {
     obj: Image;
@@ -22,6 +24,7 @@ export default function SlideImageObject({
     onClick,
     slideId,
 }: Props): JSX.Element {
+    const dispatch = useDispatch();
     const { top, left, width, height, onMouseDown, onResizeDown } = useDnd({
         startX: obj.position.x,
         startY: obj.position.y,
@@ -44,7 +47,7 @@ export default function SlideImageObject({
         const handleKeyDown = (event: KeyboardEvent) => {
             if (isSelected && event.key === "Delete") {
                 event.preventDefault();
-                dispatch(removeSlideObject, slideId, obj.id);
+                dispatch(removeSlideObject(slideId, obj.id));
             }
         };
         document.addEventListener("keydown", handleKeyDown);
@@ -52,6 +55,33 @@ export default function SlideImageObject({
             document.removeEventListener("keydown", handleKeyDown);
         };
     }, [isSelected, slideId, obj.id]);
+
+    const handleMoveObject = (
+        slideId: string,
+        slideObject: SlideObject,
+        position: { newX: number; newY: number },
+    ) => {
+        dispatch(
+            setObjectPositionCoordinates(slideId, slideObject, {
+                x: position.newX,
+                y: position.newY,
+            }),
+        );
+    };
+
+    const handleResizeObject = ({
+        slideId,
+        slideObject,
+        size,
+        position,
+    }: {
+        slideId: string;
+        slideObject: SlideObject;
+        size: { width: number; height: number };
+        position: { x: number; y: number };
+    }) => {
+        dispatch(setObjectPositionSize(slideId, slideObject, position, size));
+    };
 
     return (
         <div

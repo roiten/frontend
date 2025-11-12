@@ -1,21 +1,56 @@
 import styles from "./IslandModal.module.css";
-import { handlePasteImageUrl } from "../handlers/handlePasteImage.ts";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
+import { addSlideObject } from "../../../../store/actionCreators.ts";
+import { v4 as uuid } from "uuid";
+import { IMAGE_PRESETS } from "../../../../store/default.ts";
+import { useDispatch, useSelector } from "react-redux";
+import type { Editor } from "../../../../store/types.ts";
 
 type ImagePasteUrlModalProps = {
-    slideId: string | null;
     onClose: () => void;
 };
 
 export default function ImagePasteUrlModal({
-    slideId,
     onClose,
 }: ImagePasteUrlModalProps) {
-    const [imageUrl, setImageUrl] = useState<string>('');
+    const editor = useSelector((state: Editor) => state);
+    const dispatch = useDispatch();
+    const [imageUrl, setImageUrl] = useState<string>("");
+    const handlePasteImageUrl = (url: string) => {
+        const slideId = editor.currentSlide;
+        if (!slideId) return;
+
+        const img = new Image();
+        img.onload = () => {
+            const naturalWidth = img.naturalWidth;
+            const naturalHeight = img.naturalHeight;
+
+            const MAX_WIDTH = 1200;
+            const MAX_HEIGHT = 800;
+
+            const scale = Math.min(
+                MAX_WIDTH / naturalWidth,
+                MAX_HEIGHT / naturalHeight,
+                1,
+            );
+            const width = naturalWidth * scale;
+            const height = naturalHeight * scale;
+
+            dispatch(
+                addSlideObject(slideId, {
+                    ...IMAGE_PRESETS,
+                    id: uuid(),
+                    source: url,
+                    size: { width, height },
+                }),
+            );
+        };
+
+        img.src = url;
+    };
 
     function handleApply() {
-        console.log("Apply bg: to slide:", slideId);
         if (imageUrl != "") {
             handlePasteImageUrl(imageUrl);
         }
@@ -34,11 +69,12 @@ export default function ImagePasteUrlModal({
                 </div>
             </div>
             <div className={styles.controlButtons}>
-                <SquareButton tool={{name: 'Применить'}} onClick={handleApply} />
-                <SquareButton tool={{name: 'Отмена'}} onClick={onClose} />
+                <SquareButton
+                    tool={{ name: "Применить" }}
+                    onClick={handleApply}
+                />
+                <SquareButton tool={{ name: "Отмена" }} onClick={onClose} />
             </div>
         </div>
     );
 }
-
-

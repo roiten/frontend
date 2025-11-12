@@ -1,14 +1,15 @@
 import styles from "./Header.module.css";
 import joinStyles from "../../../../utils/joinStyle.ts";
 import * as React from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { setPresentationTitle } from "../../../store/actionCreators.ts";
+import type { Editor } from "../../../store/types.ts";
 
-type Props = {
-    title: string;
-};
-
-export default function Header({ title }: Props) {
+export default function Header() {
+    const title = useSelector((state: Editor) => state.title);
+    const dispatch = useDispatch();
     const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("новое название:", event.target.value);
+        dispatch(setPresentationTitle(event.target.value))
     };
 
     return (

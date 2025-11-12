@@ -1,11 +1,7 @@
-import PresentationComponent from "./view/Editor/Presentation.tsx";
+import PresentationComponent from './view/Editor/Presentation';
 
-import type { Editor } from "./store/types.ts";
-type AppProps = {
-    editor: Editor;
-};
-function App({ editor }: AppProps) {
-    return <PresentationComponent editor={editor} />;
+function App() {
+    return <PresentationComponent />;
 }
 
 export default App;
