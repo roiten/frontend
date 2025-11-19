@@ -1,11 +1,11 @@
 import styles from "./IslandModal.module.css";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
-import { addSlideObject } from "../../../../store/actionCreators.ts";
+import { addSlideObject } from "../../../../store/reducers/slidesReducer.ts";
 import { v4 as uuid } from "uuid";
 import { IMAGE_PRESETS } from "../../../../store/default.ts";
 import { useDispatch, useSelector } from "react-redux";
-import type { Editor } from "../../../../store/types.ts";
+import type { RootState } from "../../../../store/store.ts";
 
 type ImagePasteUrlModalProps = {
     onClose: () => void;
@@ -14,11 +14,11 @@ type ImagePasteUrlModalProps = {
 export default function ImagePasteUrlModal({
     onClose,
 }: ImagePasteUrlModalProps) {
-    const editor = useSelector((state: Editor) => state);
+    const selection = useSelector((state: RootState) => state.selection);
     const dispatch = useDispatch();
     const [imageUrl, setImageUrl] = useState<string>("");
     const handlePasteImageUrl = (url: string) => {
-        const slideId = editor.currentSlide;
+        const slideId = selection.currentSlide;
         if (!slideId) return;
 
         const img = new Image();
@@ -38,12 +38,12 @@ export default function ImagePasteUrlModal({
             const height = naturalHeight * scale;
 
             dispatch(
-                addSlideObject(slideId, {
+                addSlideObject({slideId, obj: {
                     ...IMAGE_PRESETS,
                     id: uuid(),
                     source: url,
                     size: { width, height },
-                }),
+                }}),
             );
         };
 

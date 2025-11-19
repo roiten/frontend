@@ -2,11 +2,11 @@ import styles from "./Workspace.module.css";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
 import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { addSlideObject } from "../../../store/actionCreators.ts";
+import { addSlideObject } from "../../../store/reducers/slidesReducer.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 import * as React from "react";
 import { v4 as uuid } from "uuid";
-import type { Editor } from "../../../store/types.ts";
+import type { RootState } from "../../../store/store.ts";
 
 type Props = {
     scale?: number;
@@ -19,11 +19,12 @@ export default function Workspace({
     onSelectObject,
     onClearSelection,
 }: Props) {
-    const editor = useSelector((state: Editor) => state);
+    const slides = useSelector((state: RootState) => state.slides);
+    const selection = useSelector((state: RootState) => state.selection);
     const dispatch = useDispatch();
 
-    const selectedObjects = editor.selectedObjects || [];
-    const slide = editor.slides.find((s) => s.id === editor.currentSlide);
+    const selectedObjects = selection.selectedObjects || [];
+    const slide = slides.find((s) => s.id === selection.currentSlide);
 
     const handleSelectObject = (objectId: string) => {
         const isCurrentlySelected =
@@ -57,7 +58,7 @@ export default function Workspace({
                 }
             }
         },
-        [editor.currentSlide, dispatch],
+        [selection.currentSlide, dispatch],
     );
 
     const addImageFromUrl = useCallback(
@@ -81,21 +82,21 @@ export default function Workspace({
                 width = width * scale;
                 height = height * scale;
 
-                const slideId = editor.currentSlide;
+                const slideId = selection.currentSlide;
                 if (!slideId) return;
 
                 dispatch(
-                    addSlideObject(slideId, {
+                    addSlideObject({slideId, obj: {
                         ...IMAGE_PRESETS,
                         id: uuid(),
                         source: url,
                         size: { width, height },
-                    }),
+                    }}),
                 );
             };
             img.src = url;
         },
-        [editor.currentSlide, dispatch],
+        [selection.currentSlide, dispatch],
     );
 
     if (!slide)

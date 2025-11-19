@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { moveSlide } from "../../../../store/actionCreators.ts";
+import { moveSlide } from "../../../../store/reducers/slidesReducer.ts";
 import { useDispatch } from "react-redux";
 
 export function useSlideMove(
@@ -45,7 +45,7 @@ export function useSlideMove(
             setIsDragging(false);
             return;
         }
-        dispatch(moveSlide(draggedSlidesIds, dropIndex));
+        dispatch(moveSlide({slideIds: draggedSlidesIds, newIndex: dropIndex}));
 
         setDraggedSlidesIds([]);
         setDropIndex(null);

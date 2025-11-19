@@ -1,17 +1,20 @@
 import styles from "./Infobar.module.css";
+import { useSelector } from "react-redux";
+import type { RootState } from "../../../store/store";
 
-type Props = {
-    author: string;
-    createdAt: Date;
-    editedAt: Date;
-};
+export default function Infobar() {
+    const { author, createdAt, editedAt } = useSelector(
+        (state: RootState) => state.presentation
+    );
 
-export default function Infobar({ author, createdAt, editedAt }: Props) {
+    const safeCreatedAt = new Date(createdAt);
+    const safeEditedAt = new Date(editedAt);
+
     return (
         <div className={styles.infobar}>
-            <span>Автор: {author}</span>
-            <span>Создано: {createdAt.toString()}</span>
-            <span>Изменено: {editedAt.toString()}</span>
+            <span>Автор: {author || "неизвестен"}</span>
+            <span>Создано: {safeCreatedAt.toLocaleString()}</span>
+            <span>Изменено: {safeEditedAt.toLocaleString()}</span>
         </div>
     );
 }

@@ -1,6 +1,6 @@
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import styles from "./Editor.module.css";
-import type { Editor, ModalType } from "../../store/types.ts";
+import type { ModalType } from "../../store/types.ts";
 import Header from "./Header/Header.tsx";
 import Infobar from "./Infobar/Infobar.tsx";
 import Slidebar from "./Slidebar/Slidebar.tsx";
@@ -14,11 +14,10 @@ import {
     addSelectedObject,
     clearSelectedObjects,
     removeSelectedObject,
-} from "../../store/actionCreators.ts";
+} from "../../store/reducers/selectionReducer.ts";
 import * as React from "react";
 
 export default function Presentation(): JSX.Element {
-    const editor = useSelector((state: Editor) => state);
     const dispatch = useDispatch();
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -103,11 +102,7 @@ export default function Presentation(): JSX.Element {
                 />
             </div>
 
-            <Infobar
-                author={editor.author}
-                createdAt={editor.createdAt}
-                editedAt={editor.editedAt}
-            />
+            <Infobar />
 
             <Modal
                 isOpen={modalIsOpen}

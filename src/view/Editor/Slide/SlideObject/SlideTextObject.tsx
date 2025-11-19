@@ -4,7 +4,7 @@ import {
     setObjectPositionCoordinates,
     setObjectPositionSize,
     setTextDescription,
-} from "../../../../store/actionCreators.ts";
+} from "../../../../store/reducers/slidesReducer.ts";
 import type { SlideObject, Text } from "../../../../store/types.ts";
 import { useState, useRef, type JSX, useEffect } from "react";
 import joinStyles from "../../../../../utils/joinStyle.ts";
@@ -53,7 +53,7 @@ export default function SlideTextObject({
         const handleKeyDown = (event: KeyboardEvent) => {
             if (isSelected && event.key === "Delete" && !isEditing) {
                 event.preventDefault();
-                dispatch(removeSlideObject(slideId, obj.id));
+                dispatch(removeSlideObject({slideId, objectId: obj.id}));
             }
         };
         document.addEventListener("keydown", handleKeyDown);
@@ -68,10 +68,10 @@ export default function SlideTextObject({
         position: { newX: number; newY: number },
     ) => {
         dispatch(
-            setObjectPositionCoordinates(slideId, slideObject, {
+            setObjectPositionCoordinates({slideId, slideObject, position: {
                 x: position.newX,
                 y: position.newY,
-            }),
+            }}),
         );
     };
 
@@ -86,7 +86,7 @@ export default function SlideTextObject({
         size: { width: number; height: number };
         position: { x: number; y: number };
     }) => {
-        dispatch(setObjectPositionSize(slideId, slideObject, position, size));
+        dispatch(setObjectPositionSize({slideId, slideObject, position, size}));
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -123,11 +123,11 @@ export default function SlideTextObject({
             setIsEditing(false);
             const newText = e.currentTarget.innerText;
             if (newText !== obj.description) {
-                dispatch(setTextDescription(
+                dispatch(setTextDescription({
                     slideId,
-                    obj.id,
-                    newText,
-                ));
+                    textId: obj.id,
+                    description: newText,
+            }));
             }
         }
     };

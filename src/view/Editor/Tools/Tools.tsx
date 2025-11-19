@@ -1,18 +1,23 @@
 import styles from "./Tools.module.css";
 import { useEffect, useState, useCallback } from "react";
-import type { Editor, SlideObject } from "../../../store/types.ts";
+import type { SlideObject } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
     addSlideObject,
-    openPresentation,
     setFontFamily,
     setTextColor,
     setTextSize,
-} from "../../../store/actionCreators.ts";
+    openPresentation as openSlides,
+} from "../../../store/reducers/slidesReducer.ts";
+
+import { openPresentation as openSelection } from "../../../store/reducers/selectionReducer.ts";
+
+import { openPresentation as openPresentationMeta } from "../../../store/reducers/presentationReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
-import { v4 as uuid } from 'uuid';
+import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
+import type { RootState } from "../../../store/store.ts";
 
 type Tool = {
     name: string;
@@ -24,10 +29,10 @@ type ToolsProps = {
     onToolAction?: (toolName: string) => void;
 };
 
-function getTextSelectionInfo(selectedObjectIds: string[], editor: Editor) {
+function getTextSelectionInfo(selectedObjectIds: string[], selection: RootState["selection"], slides: RootState["slides"]) {
     const hasSelection = selectedObjectIds.length > 0;
     const textObjects = selectedObjectIds.map((id) =>
-        getTextObjectById(editor, id),
+        getTextObjectById(selection, slides, id),
     );
     const hasNoText = textObjects.some((obj) => obj === null);
     const allAreText = hasSelection && !hasNoText;
@@ -35,60 +40,65 @@ function getTextSelectionInfo(selectedObjectIds: string[], editor: Editor) {
 }
 
 export default function Tools({ onToolAction }: ToolsProps) {
-    const editor = useSelector((state: Editor) => state);
-    const selectedObjectIds = editor.selectedObjects || [];
+    const slides = useSelector((state: RootState) => state.slides);
+    const selection = useSelector((state: RootState) => state.selection);
+    const selectedObjectIds = selection.selectedObjects || [];
     const dispatch = useDispatch();
 
     const [, setFile] = useState<File | null>(null);
     const [tempFontSize, setTempFontSize] = useState<string>("");
 
     const handleAddText = useCallback(() => {
-        const slideId = editor.currentSlide;
+        const slideId = selection.currentSlide;
         if (!slideId) return;
 
-        const slide = editor.slides.find((s) => s.id === slideId);
+        const slide = slides.find((s) => s.id === slideId);
         if (!slide) return;
 
         const newText: SlideObject = {
             id: uuid(),
             ...TEXT_PRESETS,
         };
-        dispatch(addSlideObject(slideId, newText));
-    }, [editor.currentSlide, editor.slides, dispatch]);
+        dispatch(addSlideObject({ slideId, obj: newText }));
+    }, [selection.currentSlide, slides, dispatch]);
 
     const handleEditFontSize = useCallback(
         (textIds: string[], size: number) => {
-            const slideId = editor.currentSlide;
+            const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = editor.slides.find((s) => s.id === slideId);
+            const slide = slides.find((s) => s.id === slideId);
             if (!slide) return;
-            textIds.forEach((id) => dispatch(setTextSize(slideId, id, size)));
+            textIds.forEach((id) =>
+                dispatch(setTextSize({ slideId, textId: id, size })),
+            );
         },
-        [editor.currentSlide, editor.slides, dispatch],
+        [selection.currentSlide, slides, dispatch],
     );
 
     const handleEditFontFamily = useCallback(
         (textIds: string[], family: string) => {
-            const slideId = editor.currentSlide;
+            const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = editor.slides.find((s) => s.id === slideId);
+            const slide = slides.find((s) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
-                dispatch(setFontFamily(slideId, id, family)),
+                dispatch(setFontFamily({ slideId, textId: id, family })),
             );
         },
-        [editor.currentSlide, editor.slides, dispatch],
+        [selection.currentSlide, slides, dispatch],
     );
 
     const handleEditFontColor = useCallback(
         (textIds: string[], color: string) => {
-            const slideId = editor.currentSlide;
+            const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = editor.slides.find((s) => s.id === slideId);
+            const slide = slides.find((s) => s.id === slideId);
             if (!slide) return;
-            textIds.forEach((id) => dispatch(setTextColor(slideId, id, color)));
+            textIds.forEach((id) =>
+                dispatch(setTextColor({ slideId, textId: id, color })),
+            );
         },
-        [editor.currentSlide, editor.slides, dispatch],
+        [selection.currentSlide, slides, dispatch],
     );
 
     const tools: Tool[] = [
@@ -122,12 +132,13 @@ export default function Tools({ onToolAction }: ToolsProps) {
         reader.onload = (event) => {
             if (event.target?.result) {
                 try {
-                    const fileContent = JSON.parse(
-                        event.target.result as string,
-                    );
-                    dispatch(openPresentation(fileContent));
+                    const parsed = JSON.parse(event.target.result as string);
+                    dispatch(openPresentationMeta(parsed));
+                    dispatch(openSlides(parsed));
+                    dispatch(openSelection(parsed));
                 } catch (error) {
                     console.error("Ошибка при парсинге файла:", error);
+                    alert("Неверный формат презентации");
                 }
             }
         };
@@ -137,19 +148,22 @@ export default function Tools({ onToolAction }: ToolsProps) {
     useEffect(() => {
         const { textObjects, allAreText } = getTextSelectionInfo(
             selectedObjectIds,
-            editor,
+            selection,
+            slides
         );
         if (allAreText && textObjects.length === 1) {
             setTempFontSize(String(textObjects[0]!.font.size));
         } else {
             setTempFontSize("");
         }
-    }, [selectedObjectIds, editor]);
+    }, [selectedObjectIds, selection]);
 
     const { textObjects, allAreText } = getTextSelectionInfo(
         selectedObjectIds,
-        editor,
+        selection,
+        slides
     );
+
     const fontFamily =
         allAreText && textObjects.length === 1
             ? textObjects[0]!.font.family

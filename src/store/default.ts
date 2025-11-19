@@ -25,9 +25,20 @@ export const DEFAULT_PRESENTATION: Editor = {
     currentSlide: null,
     selectedObjects: null,
     author: "unknown",
-    createdAt: new Date(),
-    editedAt: new Date(),
+    createdAt: Date.now(),
+    editedAt: Date.now(),
 } as const;
+
+
+export const createDefaultPresentation = (): Editor => ({
+    title: "New presentation",
+    slides: [],
+    currentSlide: null,
+    selectedObjects: null,
+    author: "unknown",
+    createdAt: Date.now(),
+    editedAt: Date.now(),
+});
 
 export const IMAGE_PRESETS = {
     type: "image",

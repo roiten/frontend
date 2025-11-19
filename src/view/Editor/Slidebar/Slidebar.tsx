@@ -1,16 +1,20 @@
 import SlidePreview from "./SlidePreview.tsx";
 import RoundButton from "../Common/Button/RoundButton/RoundButton.tsx";
 import styles from "./Slidebar.module.css";
-import { addSlide, removeSlides, chooseSlide } from "../../../store/actionCreators.ts";
+import { addSlide, removeSlides } from "../../../store/reducers/slidesReducer.ts";
+import { chooseSlide } from "../../../store/reducers/selectionReducer.ts";
 import { useSlideMove } from "./hooks/useSlideMove.ts";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import type { Editor, Slide } from "../../../store/types.ts";
+import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
+import type { RootState } from '../../../store/store.ts';
+
 
 export default function Slidebar() {
-    const editor = useSelector((state: Editor) => state);
-    const { slides } = editor;
+    const slides = useSelector((state: RootState) => state.slides);
+    const currentSlideId = useSelector((state: RootState) => state.selection.currentSlide);
+
     const dispatch = useDispatch();
 
     const [selectedSlidesIds, setSelectedSlidesIds] = useState<string[]>([]);
@@ -114,7 +118,7 @@ export default function Slidebar() {
 
             <div className={styles.slidebarList}>
                 {visibleSlides.map((slide, index) => {
-                    const isSelected = selectedSlidesIds.includes(slide.id);
+                    const isSelected = slide.id === currentSlideId;
                     const isDragged = isDragging && draggedSlidesIds.includes(slide.id);
 
                     return (
