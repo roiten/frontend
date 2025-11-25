@@ -8,8 +8,9 @@ import type { RootState } from "../../../store/store.ts";
 export default function Header() {
     const title = useSelector((state: RootState) => state.presentation.title);
     const dispatch = useDispatch();
+
     const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        dispatch(setPresentationTitle(event.target.value))
+        dispatch(setPresentationTitle(event.target.value));
     };
 
     return (
@@ -24,14 +25,11 @@ export default function Header() {
                 <input
                     type="text"
                     className={styles.title}
-                    defaultValue={title}
+                    value={title}
                     onChange={handleTitleChange}
                 />
             </div>
-
-            <div className={styles.right}>
-                <span className={styles.status}>Сохранено</span>
-            </div>
+            <span className={styles.status}>Сохранено</span>
         </div>
     );
 }

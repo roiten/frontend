@@ -1,4 +1,4 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
 import type { Editor, Selection } from "../types.ts";
 
 const initialState: Selection = {
@@ -7,7 +7,7 @@ const initialState: Selection = {
 };
 
 const selectionReducer = createSlice({
-    name: 'selection',
+    name: "selection",
     initialState,
     reducers: {
         chooseSlide(state, action: PayloadAction<string>) {
@@ -21,7 +21,9 @@ const selectionReducer = createSlice({
         },
         removeSelectedObject(state, action: PayloadAction<string>) {
             if (state.selectedObjects) {
-                const filtered = state.selectedObjects.filter(id => id !== action.payload);
+                const filtered = state.selectedObjects.filter(
+                    (id) => id !== action.payload,
+                );
                 state.selectedObjects = filtered.length > 0 ? filtered : null;
             }
         },
@@ -32,6 +34,10 @@ const selectionReducer = createSlice({
             state.currentSlide = action.payload.currentSlide;
             state.selectedObjects = action.payload.selectedObjects;
         },
+
+        set(_, action: PayloadAction<Selection>) {
+            return action.payload;
+        },
     },
 });
 
@@ -41,6 +47,7 @@ export const {
     removeSelectedObject,
     clearSelectedObjects,
     openPresentation,
+    set
 } = selectionReducer.actions;
 
 export default selectionReducer.reducer;

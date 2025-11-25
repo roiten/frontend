@@ -11,7 +11,7 @@ type Editor = {
 type Selection = {
     currentSlide: string | null;
     selectedObjects: string[] | null;
-}
+};
 
 type Slide = {
     id: string;
@@ -20,33 +20,16 @@ type Slide = {
 };
 
 type Background = Color | Picture;
-
-type Color = {
-    type: "color";
-    color: string;
-};
-
-type Picture = {
-    type: "picture";
-    source: string;
-    transparency: number;
-};
+type Color = { type: "color"; color: string };
+type Picture = { type: "picture"; source: string; transparency: number };
 
 type SlideObject = Text | Image;
 
 type Text = {
     id: string;
     transparency: number;
-
-    position: {
-        x: number;
-        y: number;
-    };
-
-    size: {
-        width: number;
-        height: number;
-    };
+    position: { x: number; y: number };
+    size: { width: number; height: number };
     description: string;
     type: "text";
     font: {
@@ -62,22 +45,26 @@ type Text = {
 type Image = {
     id: string;
     transparency: number;
-
-    position: {
-        x: number;
-        y: number;
-    };
-
-    size: {
-        width: number;
-        height: number;
-    };
+    position: { x: number; y: number };
+    size: { width: number; height: number };
     source: string;
     type: "image";
 };
 
 type ModalType = "background-color" | "image-url" | null;
 
+type HistorySnapshot = {
+     editor: Editor;
+     contextBefore: {
+         currentSlide: string | null;
+         selectedObjects: string[] | null;
+     };
+}
+
+type HistoryState = {
+    past: HistorySnapshot[];
+    future: HistorySnapshot[];
+};
 
 export type {
     Editor,
@@ -87,5 +74,7 @@ export type {
     SlideObject,
     Background,
     ModalType,
-    Selection
+    Selection,
+    HistoryState,
+    HistorySnapshot,
 };

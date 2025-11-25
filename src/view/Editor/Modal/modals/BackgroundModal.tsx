@@ -20,8 +20,6 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         const slideId = selection.currentSlide;
         if (!slideId) return;
 
-        const slide = slides.find((s) => s.id === slideId);
-        if (!slide) return;
 
         dispatch(setSlideBackground({ slideId, background: { type: "color", color: color } }));    };
 

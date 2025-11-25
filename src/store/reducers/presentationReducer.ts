@@ -1,11 +1,11 @@
-import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import { createDefaultPresentation } from '../default';
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createDefaultPresentation } from "../default";
 import type { Editor } from "../types.ts";
 
 const defaultPres = createDefaultPresentation();
 
 const presentationReducer = createSlice({
-    name: 'presentation',
+    name: "presentation",
     initialState: {
         title: defaultPres.title,
         author: defaultPres.author,
@@ -24,8 +24,17 @@ const presentationReducer = createSlice({
             state.createdAt = createdAt;
             state.editedAt = editedAt;
         },
+        set(_, action: PayloadAction<{
+            title: string;
+            author: string;
+            createdAt: number;
+            editedAt: number;
+        }>) {
+            return action.payload;
+        },
     },
 });
 
-export const { setPresentationTitle, openPresentation } = presentationReducer.actions;
+export const { setPresentationTitle, openPresentation, set } =
+    presentationReducer.actions;
 export default presentationReducer.reducer;

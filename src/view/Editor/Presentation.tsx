@@ -15,10 +15,12 @@ import {
     clearSelectedObjects,
     removeSelectedObject,
 } from "../../store/reducers/selectionReducer.ts";
+import { historyActions } from "../../store/actions/historyActions.ts";
 import * as React from "react";
+import type { AppDispatch } from "../../store/store";
 
 export default function Presentation(): JSX.Element {
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [currentModal, setCurrentModal] = useState<ModalType>(null);
@@ -88,6 +90,37 @@ export default function Presentation(): JSX.Element {
         },
         [dispatch],
     );
+
+    React.useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+
+            if (!isCtrlOrCmd) return;
+
+            e.preventDefault();
+
+            switch (e.key.toLowerCase()) {
+                case "z":
+                    if (e.shiftKey) {
+                        dispatch(historyActions.redo());
+                    } else {
+                        dispatch(historyActions.undo());
+                    }
+                    break;
+                case "y":
+                    dispatch(historyActions.redo());
+
+                    break;
+                default:
+                    return;
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => {
+            document.removeEventListener("keydown", handleKeyDown);
+        };
+    }, [dispatch]);
 
     return (
         <div className={styles.editor}>

@@ -1,6 +1,6 @@
 import styles from "./Tools.module.css";
 import { useEffect, useState, useCallback } from "react";
-import type { SlideObject } from "../../../store/types.ts";
+import type { Slide, SlideObject } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -17,7 +17,9 @@ import { openPresentation as openPresentationMeta } from "../../../store/reducer
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
-import type { RootState } from "../../../store/store.ts";
+import type { AppDispatch, RootState } from "../../../store/store.ts";
+import { clearHistory } from "../../../store/reducers/historyReducer.ts";
+import { historyActions } from "../../../store/actions/historyActions.ts";
 
 type Tool = {
     name: string;
@@ -29,7 +31,11 @@ type ToolsProps = {
     onToolAction?: (toolName: string) => void;
 };
 
-function getTextSelectionInfo(selectedObjectIds: string[], selection: RootState["selection"], slides: RootState["slides"]) {
+function getTextSelectionInfo(
+    selectedObjectIds: string[],
+    selection: RootState["selection"],
+    slides: RootState["slides"],
+) {
     const hasSelection = selectedObjectIds.length > 0;
     const textObjects = selectedObjectIds.map((id) =>
         getTextObjectById(selection, slides, id),
@@ -43,7 +49,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
     const slides = useSelector((state: RootState) => state.slides);
     const selection = useSelector((state: RootState) => state.selection);
     const selectedObjectIds = selection.selectedObjects || [];
-    const dispatch = useDispatch();
+    const dispatch = useDispatch<AppDispatch>();
 
     const [, setFile] = useState<File | null>(null);
     const [tempFontSize, setTempFontSize] = useState<string>("");
@@ -51,9 +57,6 @@ export default function Tools({ onToolAction }: ToolsProps) {
     const handleAddText = useCallback(() => {
         const slideId = selection.currentSlide;
         if (!slideId) return;
-
-        const slide = slides.find((s) => s.id === slideId);
-        if (!slide) return;
 
         const newText: SlideObject = {
             id: uuid(),
@@ -66,7 +69,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
         (textIds: string[], size: number) => {
             const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = slides.find((s) => s.id === slideId);
+            const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
                 dispatch(setTextSize({ slideId, textId: id, size })),
@@ -79,7 +82,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
         (textIds: string[], family: string) => {
             const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = slides.find((s) => s.id === slideId);
+            const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
                 dispatch(setFontFamily({ slideId, textId: id, family })),
@@ -92,7 +95,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
         (textIds: string[], color: string) => {
             const slideId = selection.currentSlide;
             if (!slideId) return;
-            const slide = slides.find((s) => s.id === slideId);
+            const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
                 dispatch(setTextColor({ slideId, textId: id, color })),
@@ -117,6 +120,16 @@ export default function Tools({ onToolAction }: ToolsProps) {
             icon: "/icons/shapes.svg",
             action: () => onToolAction?.("image-url"),
         },
+        {
+            name: "Отменить",
+            icon: "/icons/arrow-left.svg",
+            action: () => dispatch(historyActions.undo()),
+        },
+        {
+            name: "Повторить",
+            icon: "/icons/arrow-right.svg",
+            action: () => dispatch(historyActions.redo()),
+        },
     ];
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,6 +138,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             setFile(selectedFile);
             readFileAsObject(selectedFile);
         }
+        dispatch(clearHistory());
     };
 
     const readFileAsObject = (file: File) => {
@@ -149,7 +163,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
         const { textObjects, allAreText } = getTextSelectionInfo(
             selectedObjectIds,
             selection,
-            slides
+            slides,
         );
         if (allAreText && textObjects.length === 1) {
             setTempFontSize(String(textObjects[0]!.font.size));
@@ -161,7 +175,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
     const { textObjects, allAreText } = getTextSelectionInfo(
         selectedObjectIds,
         selection,
-        slides
+        slides,
     );
 
     const fontFamily =
