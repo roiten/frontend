@@ -54,11 +54,11 @@ type Image = {
 type ModalType = "background-color" | "image-url" | null;
 
 type HistorySnapshot = {
-     editor: Editor;
-     contextBefore: {
-         currentSlide: string | null;
-         selectedObjects: string[] | null;
-     };
+    editor: Editor;
+    contextBefore: {
+        currentSlide: string | null;
+        selectedObjects: string[] | null;
+    };
 }
 
 type HistoryState = {

@@ -1,10 +1,11 @@
-import { configureStore} from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import type { Middleware } from '@reduxjs/toolkit';
 import presentationReducer from './reducers/presentationReducer';
 import slidesReducer from './reducers/slidesReducer';
 import selectionReducer from './reducers/selectionReducer';
 import historyReducer from './reducers/historyReducer';
 import { historyMiddleware } from './middleware/historyMiddleware';
+import { restoreStateMiddleware } from './middleware/restoreStateMiddleware';
 
 export type PresentationState = ReturnType<typeof presentationReducer>;
 export type SlidesState = ReturnType<typeof slidesReducer>;
@@ -18,7 +19,8 @@ export interface RootState {
     history: HistoryState;
 }
 
-const typedHistoryMiddleware: Middleware<object, RootState> = historyMiddleware;
+const historyMiddlewareTyped: Middleware<object, RootState> = historyMiddleware;
+const restoreStateMiddlewareTyped: Middleware<object, RootState> = restoreStateMiddleware;
 
 export const store = configureStore({
     reducer: {
@@ -33,7 +35,7 @@ export const store = configureStore({
                 ignoredActions: ['history/savePast'],
                 ignoredPaths: ['history.past', 'history.future'],
             },
-        }).concat(typedHistoryMiddleware),
+        }).concat(historyMiddlewareTyped, restoreStateMiddlewareTyped),
 });
 
 export type AppDispatch = typeof store.dispatch;

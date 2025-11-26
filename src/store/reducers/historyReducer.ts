@@ -6,7 +6,7 @@ const initialState: HistoryState = {
     future: [],
 };
 
-const historySlice = createSlice({
+const historyReducer = createSlice({
     name: 'history',
     initialState,
     reducers: {
@@ -32,5 +32,5 @@ const historySlice = createSlice({
     },
 });
 
-export const { savePast, undo, redo, clearHistory } = historySlice.actions;
-export default historySlice.reducer;
+export const { savePast, undo, redo, clearHistory } = historyReducer.actions;
+export default historyReducer.reducer;

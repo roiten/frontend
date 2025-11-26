@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Slide, SlideObject, Background, Text, Editor } from "../types";
+import type { Slide, SlideObject, Background, Editor } from "../types";
 
 const initialState: Slide[] = [];
 
@@ -8,6 +8,7 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
+            // ✅ push → new array via immer
             state.push(action.payload);
         },
 
@@ -23,7 +24,6 @@ const slidesReducer = createSlice({
             const { slideIds, newIndex } = action.payload;
             const dragged: Slide[] = [];
             const toRemove: number[] = [];
-
             for (const id of slideIds) {
                 const i = state.findIndex((s) => s.id === id);
                 if (i !== -1) {
@@ -32,7 +32,6 @@ const slidesReducer = createSlice({
                 }
             }
             if (dragged.length === 0) return state;
-
             for (const i of toRemove.sort((a, b) => b - a)) {
                 state.splice(i, 1);
             }
@@ -44,10 +43,11 @@ const slidesReducer = createSlice({
             action: PayloadAction<{ slideId: string; obj: SlideObject }>,
         ) {
             const { slideId, obj } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                slide.content.push(obj);
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? { ...slide, content: [...slide.content, obj] }
+                    : slide
+            );
         },
 
         setSlideBackground(
@@ -55,10 +55,11 @@ const slidesReducer = createSlice({
             action: PayloadAction<{ slideId: string; background: Background }>,
         ) {
             const { slideId, background } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                slide.background = { ...background };
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? { ...slide, background: { ...background } }
+                    : slide
+            );
         },
 
         removeSlideObject(
@@ -66,12 +67,17 @@ const slidesReducer = createSlice({
             action: PayloadAction<{ slideId: string; objectId: string }>,
         ) {
             const { slideId, objectId } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide)
-                slide.content = slide.content.filter((o) => o.id !== objectId);
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.filter((o) => o.id !== objectId),
+                    }
+                    : slide
+            );
         },
 
-        setObjectPositionCoordinates(
+        editObjectPositionCoordinates(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -80,17 +86,21 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, slideObject, position } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const obj = slide.content.find((o) => o.id === slideObject.id);
-                if (obj) {
-                    obj.position.x = position.x;
-                    obj.position.y = position.y;
-                }
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === slideObject.id
+                                ? { ...obj, position: { ...position } }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
-        setObjectPositionSize(
+        editObjectPositionSize(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -100,19 +110,25 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, slideObject, position, size } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const obj = slide.content.find((o) => o.id === slideObject.id);
-                if (obj) {
-                    obj.position.x = position.x;
-                    obj.position.y = position.y;
-                    obj.size.width = size.width;
-                    obj.size.height = size.height;
-                }
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === slideObject.id
+                                ? {
+                                    ...obj,
+                                    position: { ...position },
+                                    size: { ...size },
+                                }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
-        setTextSize(
+        editTextSize(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -121,13 +137,18 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, textId, size } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const text = slide.content.find(
-                    (o): o is Text => o.type === "text" && o.id === textId,
-                );
-                if (text) text.font.size = size;
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === textId && obj.type === "text"
+                                ? { ...obj, font: { ...obj.font, size } }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
         setFontFamily(
@@ -139,16 +160,21 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, textId, family } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const text = slide.content.find(
-                    (o): o is Text => o.type === "text" && o.id === textId,
-                );
-                if (text) text.font.family = family;
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === textId && obj.type === "text"
+                                ? { ...obj, font: { ...obj.font, family } }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
-        setTextColor(
+        editTextColor(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -157,16 +183,21 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, textId, color } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const text = slide.content.find(
-                    (o): o is Text => o.type === "text" && o.id === textId,
-                );
-                if (text) text.font.color = color;
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === textId && obj.type === "text"
+                                ? { ...obj, font: { ...obj.font, color } }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
-        setTextDescription(
+        editTextDescription(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -175,21 +206,22 @@ const slidesReducer = createSlice({
             }>,
         ) {
             const { slideId, textId, description } = action.payload;
-            const slide = state.find((s) => s.id === slideId);
-            if (slide) {
-                const text = slide.content.find(
-                    (o): o is Text => o.type === "text" && o.id === textId,
-                );
-                if (text) text.description = description;
-            }
+            return state.map(slide =>
+                slide.id === slideId
+                    ? {
+                        ...slide,
+                        content: slide.content.map(obj =>
+                            obj.id === textId && obj.type === "text"
+                                ? { ...obj, description }
+                                : obj
+                        ),
+                    }
+                    : slide
+            );
         },
 
-        openPresentation(_, action: PayloadAction<Editor>) {
+        set(_, action: PayloadAction<Editor>) {
             return action.payload.slides;
-        },
-
-        setAll(_, action: PayloadAction<Slide[]>) {
-            return action.payload;
         },
     },
 });
@@ -200,15 +232,14 @@ export const {
     moveSlide,
     addSlideObject,
     removeSlideObject,
-    setObjectPositionCoordinates,
-    setObjectPositionSize,
-    setTextSize,
+    editObjectPositionCoordinates,
+    editObjectPositionSize,
+    editTextSize,
     setFontFamily,
-    setTextColor,
-    setTextDescription,
+    editTextColor,
+    editTextDescription,
     setSlideBackground,
-    openPresentation,
-    setAll
+    set,
 } = slidesReducer.actions;
 
 export default slidesReducer.reducer;

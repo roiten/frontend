@@ -2,8 +2,8 @@ import styles from "../../Workspace/Workspace.module.css";
 import { type Image, type SlideObject } from "../../../../store/types.ts";
 import {
     removeSlideObject,
-    setObjectPositionCoordinates,
-    setObjectPositionSize,
+    editObjectPositionCoordinates,
+    editObjectPositionSize,
 } from "../../../../store/reducers/slidesReducer.ts";
 import { type JSX, useEffect } from "react";
 import joinStyles from "../../../../../utils/joinStyle.ts";
@@ -62,7 +62,7 @@ export default function SlideImageObject({
         position: { newX: number; newY: number },
     ) => {
         dispatch(
-            setObjectPositionCoordinates({slideId, slideObject, position: {
+            editObjectPositionCoordinates({slideId, slideObject, position: {
                 x: position.newX,
                 y: position.newY,
             }}),
@@ -80,7 +80,7 @@ export default function SlideImageObject({
         size: { width: number; height: number };
         position: { x: number; y: number };
     }) => {
-        dispatch(setObjectPositionSize({slideId, slideObject, position, size}));
+        dispatch(editObjectPositionSize({slideId, slideObject, position, size}));
     };
 
     return (

@@ -1,9 +1,9 @@
 import styles from "../../Workspace/Workspace.module.css";
 import {
     removeSlideObject,
-    setObjectPositionCoordinates,
-    setObjectPositionSize,
-    setTextDescription,
+    editObjectPositionCoordinates,
+    editObjectPositionSize,
+    editTextDescription,
 } from "../../../../store/reducers/slidesReducer.ts";
 import type { SlideObject, Text } from "../../../../store/types.ts";
 import { useState, useRef, type JSX, useEffect } from "react";
@@ -68,7 +68,7 @@ export default function SlideTextObject({
         position: { newX: number; newY: number },
     ) => {
         dispatch(
-            setObjectPositionCoordinates({slideId, slideObject, position: {
+            editObjectPositionCoordinates({slideId, slideObject, position: {
                 x: position.newX,
                 y: position.newY,
             }}),
@@ -86,7 +86,7 @@ export default function SlideTextObject({
         size: { width: number; height: number };
         position: { x: number; y: number };
     }) => {
-        dispatch(setObjectPositionSize({slideId, slideObject, position, size}));
+        dispatch(editObjectPositionSize({slideId, slideObject, position, size}));
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -123,7 +123,7 @@ export default function SlideTextObject({
             setIsEditing(false);
             const newText = e.currentTarget.innerText;
             if (newText !== obj.description) {
-                dispatch(setTextDescription({
+                dispatch(editTextDescription({
                     slideId,
                     textId: obj.id,
                     description: newText,

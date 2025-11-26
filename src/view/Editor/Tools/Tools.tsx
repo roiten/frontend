@@ -6,21 +6,21 @@ import { useDispatch, useSelector } from "react-redux";
 import {
     addSlideObject,
     setFontFamily,
-    setTextColor,
-    setTextSize,
-    openPresentation as openSlides,
+    editTextColor,
+    editTextSize,
+    set as setSlides,
 } from "../../../store/reducers/slidesReducer.ts";
 
-import { openPresentation as openSelection } from "../../../store/reducers/selectionReducer.ts";
+import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
 
-import { openPresentation as openPresentationMeta } from "../../../store/reducers/presentationReducer.ts";
+import { set as setPresentation } from "../../../store/reducers/presentationReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
 import type { AppDispatch, RootState } from "../../../store/store.ts";
 import { clearHistory } from "../../../store/reducers/historyReducer.ts";
-import { historyActions } from "../../../store/actions/historyActions.ts";
-
+import { undo, redo } from "../../../store/middleware/actions/historyActions.ts";
+import * as React from "react";
 type Tool = {
     name: string;
     icon?: string;
@@ -72,7 +72,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
-                dispatch(setTextSize({ slideId, textId: id, size })),
+                dispatch(editTextSize({ slideId, textId: id, size })),
             );
         },
         [selection.currentSlide, slides, dispatch],
@@ -98,7 +98,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
-                dispatch(setTextColor({ slideId, textId: id, color })),
+                dispatch(editTextColor({ slideId, textId: id, color })),
             );
         },
         [selection.currentSlide, slides, dispatch],
@@ -123,12 +123,12 @@ export default function Tools({ onToolAction }: ToolsProps) {
         {
             name: "Отменить",
             icon: "/icons/arrow-left.svg",
-            action: () => dispatch(historyActions.undo()),
+            action: () => dispatch(undo()),
         },
         {
             name: "Повторить",
             icon: "/icons/arrow-right.svg",
-            action: () => dispatch(historyActions.redo()),
+            action: () => dispatch(redo()),
         },
     ];
 
@@ -147,9 +147,9 @@ export default function Tools({ onToolAction }: ToolsProps) {
             if (event.target?.result) {
                 try {
                     const parsed = JSON.parse(event.target.result as string);
-                    dispatch(openPresentationMeta(parsed));
-                    dispatch(openSlides(parsed));
-                    dispatch(openSelection(parsed));
+                    dispatch(setPresentation(parsed));
+                    dispatch(setSlides(parsed));
+                    dispatch(setSelection(parsed));
                 } catch (error) {
                     console.error("Ошибка при парсинге файла:", error);
                     alert("Неверный формат презентации");

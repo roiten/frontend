@@ -15,7 +15,7 @@ import {
     clearSelectedObjects,
     removeSelectedObject,
 } from "../../store/reducers/selectionReducer.ts";
-import { historyActions } from "../../store/actions/historyActions.ts";
+import { undo, redo } from "../../store/middleware/actions/historyActions.ts";
 import * as React from "react";
 import type { AppDispatch } from "../../store/store";
 
@@ -94,22 +94,27 @@ export default function Presentation(): JSX.Element {
     React.useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-
             if (!isCtrlOrCmd) return;
-
-            e.preventDefault();
-
             switch (e.key.toLowerCase()) {
                 case "z":
                     if (e.shiftKey) {
-                        dispatch(historyActions.redo());
+                        dispatch(redo());
                     } else {
-                        dispatch(historyActions.undo());
+                        dispatch(undo());
+                    }
+                    break;
+                case "я":
+                    if (e.shiftKey) {
+                        dispatch(redo());
+                    } else {
+                        dispatch(undo());
                     }
                     break;
                 case "y":
-                    dispatch(historyActions.redo());
-
+                    dispatch(redo());
+                    break;
+                case "н":
+                    dispatch(redo());
                     break;
                 default:
                     return;

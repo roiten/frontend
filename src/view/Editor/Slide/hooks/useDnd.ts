@@ -1,6 +1,6 @@
 import { type MouseEventHandler, useEffect, useState } from "react";
 import { IMAGE_MIN_SIZE } from "../../../../store/default.ts";
-import { type ResizeCorner } from "../../Common/ResizeCover/types.ts"
+import { type ResizeCorner } from "../../Common/ResizeCover/types.ts";
 
 type DndArgs = {
     startX: number;
@@ -41,12 +41,14 @@ export function useDnd(args: DndArgs): DndResult {
         offset: { x: number; y: number };
         position: { x: number; y: number };
         size: { w: number; h: number };
+        initial: { x: number; y: number; w: number; h: number };
     }>({
         isDragging: false,
         mode: null,
         offset: { x: 0, y: 0 },
         position: { x: startX, y: startY },
         size: { w: defaultWidth, h: defaultHeight },
+        initial: { x: startX, y: startY, w: defaultWidth, h: defaultHeight },
     });
 
     const onMouseDown: MouseEventHandler<HTMLDivElement> = (event) => {
@@ -65,31 +67,46 @@ export function useDnd(args: DndArgs): DndResult {
 
     const onResizeDown =
         (corner: ResizeCorner): MouseEventHandler<HTMLDivElement> =>
-        (event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            setDragState((prev) => ({
-                ...prev,
-                mode: corner,
-                isDragging: true,
-                offset: { x: event.clientX, y: event.clientY },
-            }));
-        };
+            (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                setDragState((prev) => ({
+                    ...prev,
+                    mode: corner,
+                    isDragging: true,
+                    offset: { x: event.clientX, y: event.clientY },
+                }));
+            };
 
     const handleMouseUp = () => {
         if (!dragState.isDragging) return;
 
-        const { mode, position, size } = dragState;
-
-        setDragState((prev) => ({ ...prev, isDragging: false }));
+        const { mode, position, size, initial } = dragState;
 
         if (mode === "move") {
-            onFinishMove(position.x, position.y);
+            const hasMoved = position.x !== initial.x || position.y !== initial.y;
+            if (hasMoved) {
+                onFinishMove(position.x, position.y);
+            }
         } else if (mode) {
-            onFinishResize(position.x, position.y, size.w, size.h);
+            const hasResized = size.w !== initial.w || size.h !== initial.h;
+            const hasMoved = position.x !== initial.x || position.y !== initial.y;
+            if (hasMoved || hasResized) {
+                onFinishResize(position.x, position.y, size.w, size.h);
+            }
         }
 
-        setDragState((prev) => ({ ...prev, mode: null }));
+        setDragState(prev => ({
+            ...prev,
+            isDragging: false,
+            mode: null,
+            initial: {
+                x: position.x,
+                y: position.y,
+                w: size.w,
+                h: size.h,
+            },
+        }));
     };
 
     useEffect(() => {
@@ -149,24 +166,16 @@ export function useDnd(args: DndArgs): DndResult {
             window.removeEventListener("mousemove", handleMouseMove);
             window.removeEventListener("mouseup", handleMouseUp);
         };
-    }, [
-        dragState.isDragging,
-        dragState.mode,
-        dragState.offset,
-        onFinishMove,
-        onFinishResize,
-    ]);
+    }, [dragState.isDragging, dragState.mode, dragState.offset]);
 
     useEffect(() => {
-        if (dragState.isDragging) return;
-
         setDragState((prev) => ({
             ...prev,
             position: { x: startX, y: startY },
             size: { w: defaultWidth, h: defaultHeight },
+            initial: { x: startX, y: startY, w: defaultWidth, h: defaultHeight },
         }));
     }, [startX, startY, defaultWidth, defaultHeight]);
-
 
     return {
         top: dragState.position.y,
