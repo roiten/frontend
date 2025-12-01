@@ -1,9 +1,8 @@
 import type { Middleware } from '@reduxjs/toolkit';
-import type { RootState } from '../store';
 import { restoreState } from './actions/historyActions';
 import type { Editor } from '../types';
 
-export const restoreStateMiddleware: Middleware<object, RootState> = (api) => (next) => (action) => {
+export const restoreStateMiddleware: Middleware<object, Editor> = (api) => (next) => (action) => {
     if (restoreState.match(action)) {
         const editor: Editor = action.payload;
 

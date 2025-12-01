@@ -30,13 +30,15 @@ export default function SlideTextObject({
     const [isBorderHovered, setIsBorderHovered] = useState(false);
     const textRef = useRef<HTMLDivElement>(null);
     const dispatch = useDispatch();
-
+    const startX = obj.position.x;
+    const startY = obj.position.y;
     const { top, left, width, height, onMouseDown, onResizeDown } = useDnd({
         startX: obj.position.x,
         startY: obj.position.y,
         defaultWidth: obj.size.width,
         defaultHeight: obj.size.height,
         onFinishMove: (newX, newY) => {
+            if (startX == newX && startY == newY) return
             handleMoveObject(slideId, obj, { newX, newY });
         },
         onFinishResize: (newX, newY, newW, newH) => {

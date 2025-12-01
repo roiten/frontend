@@ -8,7 +8,6 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
-            // ✅ push → new array via immer
             state.push(action.payload);
         },
 
@@ -50,7 +49,7 @@ const slidesReducer = createSlice({
             );
         },
 
-        setSlideBackground(
+        editSlideBackground(
             state,
             action: PayloadAction<{ slideId: string; background: Background }>,
         ) {
@@ -151,7 +150,7 @@ const slidesReducer = createSlice({
             );
         },
 
-        setFontFamily(
+        editFontFamily(
             state,
             action: PayloadAction<{
                 slideId: string;
@@ -235,10 +234,10 @@ export const {
     editObjectPositionCoordinates,
     editObjectPositionSize,
     editTextSize,
-    setFontFamily,
+    editFontFamily,
     editTextColor,
     editTextDescription,
-    setSlideBackground,
+    editSlideBackground,
     set,
 } = slidesReducer.actions;
 

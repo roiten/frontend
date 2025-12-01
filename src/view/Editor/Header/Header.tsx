@@ -3,10 +3,10 @@ import joinStyles from "../../../../utils/joinStyle.ts";
 import * as React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { setPresentationTitle } from "../../../store/reducers/presentationReducer.ts";
-import type { RootState } from "../../../store/store.ts";
+import type { Editor } from "../../../store/types.ts";
 
 export default function Header() {
-    const title = useSelector((state: RootState) => state.presentation.title);
+    const title = useSelector((state: Editor) => state.meta.title);
     const dispatch = useDispatch();
 
     const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {

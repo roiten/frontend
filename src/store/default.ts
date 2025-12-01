@@ -19,25 +19,22 @@ export const TEXT_PRESETS = {
     },
 } as const;
 
-export const DEFAULT_PRESENTATION: Editor = {
-    title: "New presentation",
-    slides: [],
-    currentSlide: null,
-    selectedObjects: null,
-    author: "unknown",
-    createdAt: Date.now(),
-    editedAt: Date.now(),
-} as const;
-
-
 export const createDefaultPresentation = (): Editor => ({
-    title: "New presentation",
+    meta: {
+        title: "New presentation",
+        author: "unknown",
+        createdAt: Date.now(),
+        editedAt: Date.now(),
+    },
     slides: [],
-    currentSlide: null,
-    selectedObjects: null,
-    author: "unknown",
-    createdAt: Date.now(),
-    editedAt: Date.now(),
+    selection: {
+        currentSlide: null,
+        selectedObjects: null,
+    },
+    history: {
+        past: [],
+        future: []
+    }
 });
 
 export const IMAGE_PRESETS = {

@@ -5,7 +5,7 @@ import { addSlideObject } from "../../../../store/reducers/slidesReducer.ts";
 import { v4 as uuid } from "uuid";
 import { IMAGE_PRESETS } from "../../../../store/default.ts";
 import { useDispatch, useSelector } from "react-redux";
-import type { RootState } from "../../../../store/store.ts";
+import type { Editor } from "../../../../store/types.ts";
 
 type ImagePasteUrlModalProps = {
     onClose: () => void;
@@ -14,7 +14,7 @@ type ImagePasteUrlModalProps = {
 export default function ImagePasteUrlModal({
     onClose,
 }: ImagePasteUrlModalProps) {
-    const selection = useSelector((state: RootState) => state.selection);
+    const selection = useSelector((state: Editor) => state.selection);
     const dispatch = useDispatch();
     const [imageUrl, setImageUrl] = useState<string>("");
     const handlePasteImageUrl = (url: string) => {

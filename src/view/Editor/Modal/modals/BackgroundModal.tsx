@@ -2,16 +2,16 @@ import styles from "./IslandModal.module.css";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {setSlideBackground} from "../../../../store/reducers/slidesReducer.ts";
-import type { RootState } from "../../../../store/store.ts";
+import {editSlideBackground} from "../../../../store/reducers/slidesReducer.ts";
+import type { Editor } from "../../../../store/types.ts";
 
 type BackgroundModalProps = {
     onClose: () => void;
 };
 
 export default function BackgroundModal({ onClose }: BackgroundModalProps) {
-    const selection = useSelector((state: RootState) => state.selection);
-    const slides = useSelector((state: RootState) => state.slides);
+    const selection = useSelector((state: Editor) => state.selection);
+    const slides = useSelector((state: Editor) => state.slides);
     const dispatch = useDispatch();
     const [colorBackground, setColorBackground] = useState<string>("white");
     const [urlBackground, setUrlBackground] = useState<string>("");
@@ -21,7 +21,7 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         if (!slideId) return;
 
 
-        dispatch(setSlideBackground({ slideId, background: { type: "color", color: color } }));    };
+        dispatch(editSlideBackground({ slideId, background: { type: "color", color: color } }));    };
 
     const handleEditSlideBackgroundImage = (url: string) => {
         const slideId = selection.currentSlide;
@@ -31,7 +31,7 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         if (!slide) return;
 
         dispatch(
-            setSlideBackground({slideId, background: {
+            editSlideBackground({slideId, background: {
                 type: "picture",
                 source: url,
                 transparency: 1,

@@ -1,11 +1,11 @@
 import styles from "./Tools.module.css";
 import { useEffect, useState, useCallback } from "react";
-import type { Slide, SlideObject } from "../../../store/types.ts";
+import type { Editor, Slide, SlideObject } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 import { useDispatch, useSelector } from "react-redux";
 import {
     addSlideObject,
-    setFontFamily,
+    editFontFamily,
     editTextColor,
     editTextSize,
     set as setSlides,
@@ -17,7 +17,7 @@ import { set as setPresentation } from "../../../store/reducers/presentationRedu
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
-import type { AppDispatch, RootState } from "../../../store/store.ts";
+import type { AppDispatch } from "../../../store/store.ts";
 import { clearHistory } from "../../../store/reducers/historyReducer.ts";
 import { undo, redo } from "../../../store/middleware/actions/historyActions.ts";
 import * as React from "react";
@@ -33,8 +33,8 @@ type ToolsProps = {
 
 function getTextSelectionInfo(
     selectedObjectIds: string[],
-    selection: RootState["selection"],
-    slides: RootState["slides"],
+    selection: Editor["selection"],
+    slides: Editor["slides"],
 ) {
     const hasSelection = selectedObjectIds.length > 0;
     const textObjects = selectedObjectIds.map((id) =>
@@ -46,8 +46,8 @@ function getTextSelectionInfo(
 }
 
 export default function Tools({ onToolAction }: ToolsProps) {
-    const slides = useSelector((state: RootState) => state.slides);
-    const selection = useSelector((state: RootState) => state.selection);
+    const slides = useSelector((state: Editor) => state.slides);
+    const selection = useSelector((state: Editor) => state.selection);
     const selectedObjectIds = selection.selectedObjects || [];
     const dispatch = useDispatch<AppDispatch>();
 
@@ -85,7 +85,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             const slide = slides.find((s: Slide) => s.id === slideId);
             if (!slide) return;
             textIds.forEach((id) =>
-                dispatch(setFontFamily({ slideId, textId: id, family })),
+                dispatch(editFontFamily({ slideId, textId: id, family })),
             );
         },
         [selection.currentSlide, slides, dispatch],

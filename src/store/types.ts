@@ -1,17 +1,21 @@
 type Editor = {
-    title: string;
+    meta: MetaData;
     slides: Slide[];
-    currentSlide: string | null;
-    selectedObjects: string[] | null;
-    author: string;
-    createdAt: number;
-    editedAt: number;
+    selection: Selection;
+    history: HistoryState;
 };
 
 type Selection = {
     currentSlide: string | null;
     selectedObjects: string[] | null;
 };
+
+type MetaData = {
+    title: string;
+    author: string;
+    createdAt: number;
+    editedAt: number;
+}
 
 type Slide = {
     id: string;
@@ -54,7 +58,11 @@ type Image = {
 type ModalType = "background-color" | "image-url" | null;
 
 type HistorySnapshot = {
-    editor: Editor;
+    editor: {
+        meta: MetaData;
+        slides: Slide[];
+        selection: Selection;
+    }
     contextBefore: {
         currentSlide: string | null;
         selectedObjects: string[] | null;

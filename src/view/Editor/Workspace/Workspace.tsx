@@ -6,7 +6,7 @@ import { addSlideObject } from "../../../store/reducers/slidesReducer.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 import * as React from "react";
 import { v4 as uuid } from "uuid";
-import type { RootState } from "../../../store/store.ts";
+import type { Editor } from "../../../store/types.ts";
 
 type Props = {
     scale?: number;
@@ -19,8 +19,8 @@ export default function Workspace({
     onSelectObject,
     onClearSelection,
 }: Props) {
-    const slides = useSelector((state: RootState) => state.slides);
-    const selection = useSelector((state: RootState) => state.selection);
+    const slides = useSelector((state: Editor) => state.slides);
+    const selection = useSelector((state: Editor) => state.selection);
     const dispatch = useDispatch();
 
     const selectedObjects = selection.selectedObjects || [];

@@ -6,31 +6,20 @@ import selectionReducer from './reducers/selectionReducer';
 import historyReducer from './reducers/historyReducer';
 import { historyMiddleware } from './middleware/historyMiddleware';
 import { restoreStateMiddleware } from './middleware/restoreStateMiddleware';
+import type { Editor } from "./types.ts";
 
-export type PresentationState = ReturnType<typeof presentationReducer>;
-export type SlidesState = ReturnType<typeof slidesReducer>;
-export type SelectionState = ReturnType<typeof selectionReducer>;
-export type HistoryState = ReturnType<typeof historyReducer>;
-
-export interface RootState {
-    presentation: PresentationState;
-    slides: SlidesState;
-    selection: SelectionState;
-    history: HistoryState;
-}
-
-const historyMiddlewareTyped: Middleware<object, RootState> = historyMiddleware;
-const restoreStateMiddlewareTyped: Middleware<object, RootState> = restoreStateMiddleware;
+const historyMiddlewareTyped: Middleware<object, Editor> = historyMiddleware;
+const restoreStateMiddlewareTyped: Middleware<object, Editor> = restoreStateMiddleware;
 
 export const store = configureStore({
     reducer: {
-        presentation: presentationReducer,
+        meta: presentationReducer,
         slides: slidesReducer,
         selection: selectionReducer,
         history: historyReducer,
     },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware({
+            getDefaultMiddleware({
             serializableCheck: {
                 ignoredActions: ['history/savePast'],
                 ignoredPaths: ['history.past', 'history.future'],

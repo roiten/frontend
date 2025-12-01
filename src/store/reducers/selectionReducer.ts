@@ -31,8 +31,8 @@ const selectionReducer = createSlice({
             state.selectedObjects = null;
         },
         set(state, action: PayloadAction<Editor>) {
-            state.currentSlide = action.payload.currentSlide;
-            state.selectedObjects = action.payload.selectedObjects;
+            state.currentSlide = action.payload.selection.currentSlide;
+            state.selectedObjects = action.payload.selection.selectedObjects;
         },
     },
 });

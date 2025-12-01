@@ -5,12 +5,12 @@ import type { Editor } from "../types";
 const defaultPres = createDefaultPresentation();
 
 const presentationReducer = createSlice({
-    name: "presentation",
+    name: "meta",
     initialState: {
-        title: defaultPres.title,
-        author: defaultPres.author,
-        createdAt: defaultPres.createdAt,
-        editedAt: defaultPres.editedAt,
+        title: defaultPres.meta.title,
+        author: defaultPres.meta.author,
+        createdAt: defaultPres.meta.createdAt,
+        editedAt: defaultPres.meta.editedAt,
     },
     reducers: {
         setPresentationTitle(state, action: PayloadAction<string>) {
@@ -18,7 +18,7 @@ const presentationReducer = createSlice({
             state.editedAt = Date.now();
         },
         set(state, action: PayloadAction<Editor>) {
-            const { title, author, createdAt, editedAt } = action.payload;
+            const { title, author, createdAt, editedAt } = action.payload.meta;
             state.title = title;
             state.author = author;
             state.createdAt = createdAt;

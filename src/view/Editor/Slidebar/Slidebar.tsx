@@ -8,12 +8,12 @@ import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
-import type { RootState } from '../../../store/store.ts';
+import type { Editor } from '../../../store/types.ts';
 
 
 export default function Slidebar() {
-    const slides = useSelector((state: RootState) => state.slides);
-    const currentSlideId = useSelector((state: RootState) => state.selection.currentSlide);
+    const slides = useSelector((state: Editor) => state.slides);
+    const currentSlideId = useSelector((state: Editor) => state.selection.currentSlide);
 
     const dispatch = useDispatch();
 

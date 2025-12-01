@@ -1,11 +1,11 @@
 import { createAction, createAsyncThunk } from '@reduxjs/toolkit';
-import type { RootState, AppDispatch } from '../../store.ts';
+import type { AppDispatch } from '../../store.ts';
 import { undo as historyUndo, redo as historyRedo } from '../../reducers/historyReducer.ts';
 import type { Editor } from '../../types.ts';
 
 const restoreState = createAction<Editor>('history/restoreState');
 
-const undo = createAsyncThunk<void, void, { state: RootState; dispatch: AppDispatch }>(
+const undo = createAsyncThunk<void, void, { state: Editor; dispatch: AppDispatch }>(
     'history/undo',
     (_, { getState, dispatch }) => {
         const state = getState();
@@ -18,7 +18,7 @@ const undo = createAsyncThunk<void, void, { state: RootState; dispatch: AppDispa
     }
 );
 
-const redo = createAsyncThunk<void, void, { state: RootState; dispatch: AppDispatch }>(
+const redo = createAsyncThunk<void, void, { state: Editor; dispatch: AppDispatch }>(
     'history/redo',
     (_, { getState, dispatch }) => {
         const state = getState();
