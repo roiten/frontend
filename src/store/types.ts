@@ -1,9 +1,14 @@
-type Editor = {
+type Undoable<T> = {
+    past: T[];
+    present: T;
+    future: T[];
+};
+
+type Editor = Undoable<{
     meta: MetaData;
     slides: Slide[];
     selection: Selection;
-    history: HistoryState;
-};
+}>;
 
 type Selection = {
     currentSlide: string | null;
@@ -57,24 +62,8 @@ type Image = {
 
 type ModalType = "background-color" | "image-url" | null;
 
-type HistorySnapshot = {
-    editor: {
-        meta: MetaData;
-        slides: Slide[];
-        selection: Selection;
-    }
-    contextBefore: {
-        currentSlide: string | null;
-        selectedObjects: string[] | null;
-    };
-}
-
-type HistoryState = {
-    past: HistorySnapshot[];
-    future: HistorySnapshot[];
-};
-
 export type {
+    Undoable,
     Editor,
     Image,
     Text,
@@ -83,6 +72,5 @@ export type {
     Background,
     ModalType,
     Selection,
-    HistoryState,
-    HistorySnapshot,
+    MetaData,
 };

@@ -14,7 +14,7 @@ type ImagePasteUrlModalProps = {
 export default function ImagePasteUrlModal({
     onClose,
 }: ImagePasteUrlModalProps) {
-    const selection = useSelector((state: Editor) => state.selection);
+    const selection = useSelector((state: Editor) => state.present.selection);
     const dispatch = useDispatch();
     const [imageUrl, setImageUrl] = useState<string>("");
     const handlePasteImageUrl = (url: string) => {

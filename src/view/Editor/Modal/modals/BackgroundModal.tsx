@@ -10,8 +10,8 @@ type BackgroundModalProps = {
 };
 
 export default function BackgroundModal({ onClose }: BackgroundModalProps) {
-    const selection = useSelector((state: Editor) => state.selection);
-    const slides = useSelector((state: Editor) => state.slides);
+    const selection = useSelector((state: Editor) => state.present.selection);
+    const slides = useSelector((state: Editor) => state.present.slides);
     const dispatch = useDispatch();
     const [colorBackground, setColorBackground] = useState<string>("white");
     const [urlBackground, setUrlBackground] = useState<string>("");

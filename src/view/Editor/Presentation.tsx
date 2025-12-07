@@ -15,9 +15,9 @@ import {
     clearSelectedObjects,
     removeSelectedObject,
 } from "../../store/reducers/selectionReducer.ts";
-import { undo, redo } from "../../store/middleware/actions/historyActions.ts";
 import * as React from "react";
 import type { AppDispatch } from "../../store/store";
+import { undo, redo } from "../../store/undoable";
 
 export default function Presentation(): JSX.Element {
     const dispatch = useDispatch<AppDispatch>();
@@ -95,30 +95,34 @@ export default function Presentation(): JSX.Element {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isCtrlOrCmd = e.ctrlKey || e.metaKey;
             if (!isCtrlOrCmd) return;
-            switch (e.key.toLowerCase()) {
-                case "z":
-                    if (e.shiftKey) {
-                        dispatch(redo());
-                    } else {
-                        dispatch(undo());
-                    }
-                    break;
-                case "я":
-                    if (e.shiftKey) {
-                        dispatch(redo());
-                    } else {
-                        dispatch(undo());
-                    }
-                    break;
-                case "y":
+                    switch (e.key.toLowerCase()) {
+            case "z":
+                e.preventDefault();
+                if (e.shiftKey) {
                     dispatch(redo());
-                    break;
-                case "н":
+                } else {
+                    dispatch(undo());
+                }
+                break;
+            case "y":
+                e.preventDefault();
+                dispatch(redo());
+                break;
+            case "я":
+                if (!e.shiftKey) {
+                    e.preventDefault();
+                    dispatch(undo());
+                }
+                break;
+            case "н":
+                if (e.shiftKey) {
+                    e.preventDefault();
                     dispatch(redo());
-                    break;
-                default:
-                    return;
-            }
+                }
+                break;
+            default:
+                return;
+        }
         };
 
         document.addEventListener("keydown", handleKeyDown);

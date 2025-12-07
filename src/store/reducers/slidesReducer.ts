@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Slide, SlideObject, Background, Editor } from "../types";
+import type { Slide, SlideObject, Background } from "../types";
 
 const initialState: Slide[] = [];
 
@@ -8,7 +8,7 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
-            state.push(action.payload);
+            return [...state, action.payload];
         },
 
         removeSlides(state, action: PayloadAction<string[]>) {
@@ -18,60 +18,53 @@ const slidesReducer = createSlice({
 
         moveSlide(
             state,
-            action: PayloadAction<{ slideIds: string[]; newIndex: number }>,
+            action: PayloadAction<{ slideIds: string[]; newIndex: number }>
         ) {
             const { slideIds, newIndex } = action.payload;
-            const dragged: Slide[] = [];
-            const toRemove: number[] = [];
-            for (const id of slideIds) {
-                const i = state.findIndex((s) => s.id === id);
-                if (i !== -1) {
-                    dragged.push({ ...state[i] });
-                    toRemove.push(i);
-                }
-            }
-            if (dragged.length === 0) return state;
-            for (const i of toRemove.sort((a, b) => b - a)) {
-                state.splice(i, 1);
-            }
-            state.splice(newIndex, 0, ...dragged);
+            const dragged = state.filter((s) => slideIds.includes(s.id));
+            const remaining = state.filter((s) => !slideIds.includes(s.id));
+
+            return [
+                ...remaining.slice(0, newIndex),
+                ...dragged.map((s) => ({ ...s, content: [...s.content] })),
+                ...remaining.slice(newIndex),
+            ];
         },
 
         addSlideObject(
             state,
-            action: PayloadAction<{ slideId: string; obj: SlideObject }>,
+            action: PayloadAction<{ slideId: string; obj: SlideObject }>
         ) {
-            const { slideId, obj } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
-                    ? { ...slide, content: [...slide.content, obj] }
-                    : slide
-            );
-        },
-
-        editSlideBackground(
-            state,
-            action: PayloadAction<{ slideId: string; background: Background }>,
-        ) {
-            const { slideId, background } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
-                    ? { ...slide, background: { ...background } }
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
+                    ? { ...slide, content: [...slide.content, action.payload.obj] }
                     : slide
             );
         },
 
         removeSlideObject(
             state,
-            action: PayloadAction<{ slideId: string; objectId: string }>,
+            action: PayloadAction<{ slideId: string; objectId: string }>
         ) {
-            const { slideId, objectId } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.filter((o) => o.id !== objectId),
-                    }
+                          ...slide,
+                          content: slide.content.filter(
+                              (obj) => obj.id !== action.payload.objectId
+                          ),
+                      }
+                    : slide
+            );
+        },
+
+        editSlideBackground(
+            state,
+            action: PayloadAction<{ slideId: string; background: Background }>
+        ) {
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
+                    ? { ...slide, background: { ...action.payload.background } }
                     : slide
             );
         },
@@ -82,19 +75,18 @@ const slidesReducer = createSlice({
                 slideId: string;
                 slideObject: SlideObject;
                 position: { x: number; y: number };
-            }>,
+            }>
         ) {
-            const { slideId, slideObject, position } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === slideObject.id
-                                ? { ...obj, position: { ...position } }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.slideObject.id
+                                  ? { ...obj, position: { ...action.payload.position } }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
@@ -106,23 +98,22 @@ const slidesReducer = createSlice({
                 slideObject: SlideObject;
                 position: { x: number; y: number };
                 size: { width: number; height: number };
-            }>,
+            }>
         ) {
-            const { slideId, slideObject, position, size } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === slideObject.id
-                                ? {
-                                    ...obj,
-                                    position: { ...position },
-                                    size: { ...size },
-                                }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.slideObject.id
+                                  ? {
+                                        ...obj,
+                                        position: { ...action.payload.position },
+                                        size: { ...action.payload.size },
+                                    }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
@@ -133,19 +124,18 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 size: number;
-            }>,
+            }>
         ) {
-            const { slideId, textId, size } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === textId && obj.type === "text"
-                                ? { ...obj, font: { ...obj.font, size } }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.textId && obj.type === "text"
+                                  ? { ...obj, font: { ...obj.font, size: action.payload.size } }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
@@ -156,19 +146,18 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 family: string;
-            }>,
+            }>
         ) {
-            const { slideId, textId, family } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === textId && obj.type === "text"
-                                ? { ...obj, font: { ...obj.font, family } }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.textId && obj.type === "text"
+                                  ? { ...obj, font: { ...obj.font, family: action.payload.family } }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
@@ -179,19 +168,18 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 color: string;
-            }>,
+            }>
         ) {
-            const { slideId, textId, color } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === textId && obj.type === "text"
-                                ? { ...obj, font: { ...obj.font, color } }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.textId && obj.type === "text"
+                                  ? { ...obj, font: { ...obj.font, color: action.payload.color } }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
@@ -202,25 +190,27 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 description: string;
-            }>,
+            }>
         ) {
-            const { slideId, textId, description } = action.payload;
-            return state.map(slide =>
-                slide.id === slideId
+            return state.map((slide) =>
+                slide.id === action.payload.slideId
                     ? {
-                        ...slide,
-                        content: slide.content.map(obj =>
-                            obj.id === textId && obj.type === "text"
-                                ? { ...obj, description }
-                                : obj
-                        ),
-                    }
+                          ...slide,
+                          content: slide.content.map((obj) =>
+                              obj.id === action.payload.textId && obj.type === "text"
+                                  ? { ...obj, description: action.payload.description }
+                                  : obj
+                          ),
+                      }
                     : slide
             );
         },
 
-        set(_, action: PayloadAction<Editor>) {
-            return action.payload.slides;
+        set(_, action: PayloadAction<Slide[]>) {
+            return action.payload.map((slide) => ({
+                ...slide,
+                content: slide.content.map((obj) => ({ ...obj })),
+            }));
         },
     },
 });

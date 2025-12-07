@@ -19,8 +19,8 @@ export default function Workspace({
     onSelectObject,
     onClearSelection,
 }: Props) {
-    const slides = useSelector((state: Editor) => state.slides);
-    const selection = useSelector((state: Editor) => state.selection);
+    const slides = useSelector((state: Editor) => state.present.slides);
+    const selection = useSelector((state: Editor) => state.present.selection);
     const dispatch = useDispatch();
 
     const selectedObjects = selection.selectedObjects || [];

@@ -4,7 +4,7 @@ import type { Editor } from "../../../store/types.ts";
 
 export default function Infobar() {
     const { author, createdAt, editedAt } = useSelector(
-        (state: Editor) => state.meta
+        (state: Editor) => state.present.meta
     );
 
     const safeCreatedAt = new Date(createdAt);

@@ -1,7 +1,4 @@
-import type {
-    Editor,
-    Background,
-} from "./types.ts";
+import type { Editor, Background } from "./types.ts";
 
 export const TEXT_PRESETS = {
     type: "text",
@@ -20,21 +17,21 @@ export const TEXT_PRESETS = {
 } as const;
 
 export const createDefaultPresentation = (): Editor => ({
-    meta: {
-        title: "New presentation",
-        author: "unknown",
-        createdAt: Date.now(),
-        editedAt: Date.now(),
+    past: [],
+    future: [],
+    present: {
+        meta: {
+            title: "New presentation",
+            author: "unknown",
+            createdAt: Date.now(),
+            editedAt: Date.now(),
+        },
+        slides: [],
+        selection: {
+            currentSlide: null,
+            selectedObjects: null,
+        },
     },
-    slides: [],
-    selection: {
-        currentSlide: null,
-        selectedObjects: null,
-    },
-    history: {
-        past: [],
-        future: []
-    }
 });
 
 export const IMAGE_PRESETS = {

@@ -30,9 +30,9 @@ const selectionReducer = createSlice({
         clearSelectedObjects(state) {
             state.selectedObjects = null;
         },
-        set(state, action: PayloadAction<Editor>) {
-            state.currentSlide = action.payload.selection.currentSlide;
-            state.selectedObjects = action.payload.selection.selectedObjects;
+        set(state, action: PayloadAction<Selection>) {
+            state.currentSlide = action.payload.currentSlide;
+            state.selectedObjects = action.payload.selectedObjects;
         },
     },
 });

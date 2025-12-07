@@ -10,17 +10,15 @@ import {
     editTextSize,
     set as setSlides,
 } from "../../../store/reducers/slidesReducer.ts";
-
 import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
-
 import { set as setPresentation } from "../../../store/reducers/presentationReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
-import type { AppDispatch } from "../../../store/store.ts";
-import { clearHistory } from "../../../store/reducers/historyReducer.ts";
-import { undo, redo } from "../../../store/middleware/actions/historyActions.ts";
 import * as React from "react";
+import { undo, redo } from "../../../store/undoable.ts";
+import { useAppDispatch, useAppSelector } from "../../../store/store.ts";
+
 type Tool = {
     name: string;
     icon?: string;
@@ -33,8 +31,8 @@ type ToolsProps = {
 
 function getTextSelectionInfo(
     selectedObjectIds: string[],
-    selection: Editor["selection"],
-    slides: Editor["slides"],
+    selection: { currentSlide: string | null; selectedObjects: string[] | null },
+    slides: Slide[],
 ) {
     const hasSelection = selectedObjectIds.length > 0;
     const textObjects = selectedObjectIds.map((id) =>
@@ -46,10 +44,15 @@ function getTextSelectionInfo(
 }
 
 export default function Tools({ onToolAction }: ToolsProps) {
-    const slides = useSelector((state: Editor) => state.slides);
-    const selection = useSelector((state: Editor) => state.selection);
+    const dispatch = useAppDispatch();
+
+    const { past, future, present } = useAppSelector((state: Editor) => state);
+    const canUndo = past.length > 0;
+    const canRedo = future.length > 0;
+
+    const slides = present.slides;
+    const selection = present.selection;
     const selectedObjectIds = selection.selectedObjects || [];
-    const dispatch = useDispatch<AppDispatch>();
 
     const [, setFile] = useState<File | null>(null);
     const [tempFontSize, setTempFontSize] = useState<string>("");
@@ -123,12 +126,12 @@ export default function Tools({ onToolAction }: ToolsProps) {
         {
             name: "Отменить",
             icon: "/icons/arrow-left.svg",
-            action: () => dispatch(undo()),
+            action: canUndo ? () => dispatch(undo()) : undefined,
         },
         {
             name: "Повторить",
             icon: "/icons/arrow-right.svg",
-            action: () => dispatch(redo()),
+            action: canRedo ? () => dispatch(redo()) : undefined,
         },
     ];
 
@@ -138,7 +141,6 @@ export default function Tools({ onToolAction }: ToolsProps) {
             setFile(selectedFile);
             readFileAsObject(selectedFile);
         }
-        dispatch(clearHistory());
     };
 
     const readFileAsObject = (file: File) => {
@@ -147,9 +149,9 @@ export default function Tools({ onToolAction }: ToolsProps) {
             if (event.target?.result) {
                 try {
                     const parsed = JSON.parse(event.target.result as string);
-                    dispatch(setPresentation(parsed));
-                    dispatch(setSlides(parsed));
-                    dispatch(setSelection(parsed));
+                    dispatch(setPresentation(parsed.meta));
+                    dispatch(setSlides(parsed.slides));
+                    dispatch(setSelection(parsed.selection));
                 } catch (error) {
                     console.error("Ошибка при парсинге файла:", error);
                     alert("Неверный формат презентации");
@@ -170,7 +172,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
         } else {
             setTempFontSize("");
         }
-    }, [selectedObjectIds, selection]);
+    }, [selectedObjectIds, selection, slides]);
 
     const { textObjects, allAreText } = getTextSelectionInfo(
         selectedObjectIds,

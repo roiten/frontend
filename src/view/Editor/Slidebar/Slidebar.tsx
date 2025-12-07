@@ -12,8 +12,8 @@ import type { Editor } from '../../../store/types.ts';
 
 
 export default function Slidebar() {
-    const slides = useSelector((state: Editor) => state.slides);
-    const currentSlideId = useSelector((state: Editor) => state.selection.currentSlide);
+    const slides = useSelector((state: Editor) => state.present.slides);
+    const currentSlideId = useSelector((state: Editor) => state.present.selection.currentSlide);
 
     const dispatch = useDispatch();
 

@@ -6,7 +6,7 @@ import { setPresentationTitle } from "../../../store/reducers/presentationReduce
 import type { Editor } from "../../../store/types.ts";
 
 export default function Header() {
-    const title = useSelector((state: Editor) => state.meta.title);
+    const title = useSelector((state: Editor) => state.present.meta.title);
     const dispatch = useDispatch();
 
     const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
