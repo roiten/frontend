@@ -1,9 +1,8 @@
-import type { Text } from "./types";
-import type { Editor } from "./store.ts";
+import type { Text, Selection, Slide } from "./types";
 
 const getTextObjectById = (
-    selection: Editor["selection"],
-    slides: Editor["slides"],
+    selection: Selection,
+    slides: Slide[],
     objectId: string,
 ): Text | null => {
     const currentSlide = selection.currentSlide;

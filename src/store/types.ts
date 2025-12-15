@@ -1,14 +1,14 @@
-type Undoable<T> = {
-    past: T[];
-    present: T;
-    future: T[];
-};
-
-type Editor = Undoable<{
+type Presentation = {
     meta: MetaData;
     slides: Slide[];
     selection: Selection;
-}>;
+};
+
+type Editor = {
+    past: Presentation[];
+    present: Presentation;
+    future: Presentation[];
+};
 
 type Selection = {
     currentSlide: string | null;
@@ -18,6 +18,7 @@ type Selection = {
 type MetaData = {
     title: string;
     author: string;
+    presentationId: string;
     createdAt: number;
     editedAt: number;
 }
@@ -60,10 +61,9 @@ type Image = {
     type: "image";
 };
 
-type ModalType = "background-color" | "image-url" | null;
+type ModalType = "background-color" | "image-url" | "slides-list" | null;
 
 export type {
-    Undoable,
     Editor,
     Image,
     Text,
@@ -73,4 +73,5 @@ export type {
     ModalType,
     Selection,
     MetaData,
+    Presentation,
 };

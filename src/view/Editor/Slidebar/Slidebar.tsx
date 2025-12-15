@@ -9,12 +9,19 @@ import { useDispatch, useSelector } from "react-redux";
 import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
 import type { Editor } from '../../../store/types.ts';
+import { useAppSelector } from "../../../store/store.ts";
 
 
 export default function Slidebar() {
     const slides = useSelector((state: Editor) => state.present.slides);
     const currentSlideId = useSelector((state: Editor) => state.present.selection.currentSlide);
+    const presentationId = useAppSelector(
+        (state: Editor) => state.present.meta.presentationId,
+    );
 
+    const checkPresentationOpened = () => {
+        return presentationId != "";
+    };
     const dispatch = useDispatch();
 
     const [selectedSlidesIds, setSelectedSlidesIds] = useState<string[]>([]);
@@ -112,6 +119,7 @@ export default function Slidebar() {
                         key={tool.name}
                         tool={tool}
                         onClick={() => tool.action?.()}
+                        enabled={checkPresentationOpened()}
                     />
                 ))}
             </div>

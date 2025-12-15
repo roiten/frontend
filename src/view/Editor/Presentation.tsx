@@ -17,9 +17,16 @@ import {
 } from "../../store/reducers/selectionReducer.ts";
 import * as React from "react";
 import type { AppDispatch } from "../../store/store";
-import { undo, redo } from "../../store/undoable";
+import { undo, redo } from "../../store/reducers/undoable.ts";
+import ChooseSlidesModal from "./Modal/modals/ChooseSlidesModal.tsx";
 
-export default function Presentation(): JSX.Element {
+type PresentationProps = {
+    onLogout: () => void;
+};
+
+export default function Presentation({
+    onLogout,
+}: PresentationProps): JSX.Element {
     const dispatch = useDispatch<AppDispatch>();
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
@@ -43,6 +50,9 @@ export default function Presentation(): JSX.Element {
             case "image-url":
                 openModal("image-url");
                 break;
+            case "slides-list":
+                openModal("slides-list");
+                break;
             default:
                 console.warn(toolName, "действие не назначено");
         }
@@ -54,6 +64,8 @@ export default function Presentation(): JSX.Element {
                 return <BackgroundModal onClose={closeModal} />;
             case "image-url":
                 return <ImagePasteUrlModal onClose={closeModal} />;
+            case "slides-list":
+                return <ChooseSlidesModal onClose={closeModal} />;
             default:
                 return null;
         }
@@ -65,6 +77,8 @@ export default function Presentation(): JSX.Element {
                 return "Выберите цвет фона";
             case "image-url":
                 return "Введите URL вставляемого изображения";
+            case "slides-list":
+                return "Выберите презентацию";
             default:
                 return "";
         }
@@ -95,34 +109,34 @@ export default function Presentation(): JSX.Element {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isCtrlOrCmd = e.ctrlKey || e.metaKey;
             if (!isCtrlOrCmd) return;
-                    switch (e.key.toLowerCase()) {
-            case "z":
-                e.preventDefault();
-                if (e.shiftKey) {
-                    dispatch(redo());
-                } else {
-                    dispatch(undo());
-                }
-                break;
-            case "y":
-                e.preventDefault();
-                dispatch(redo());
-                break;
-            case "я":
-                if (!e.shiftKey) {
+            switch (e.key.toLowerCase()) {
+                case "z":
                     e.preventDefault();
-                    dispatch(undo());
-                }
-                break;
-            case "н":
-                if (e.shiftKey) {
+                    if (e.shiftKey) {
+                        dispatch(redo());
+                    } else {
+                        dispatch(undo());
+                    }
+                    break;
+                case "y":
                     e.preventDefault();
                     dispatch(redo());
-                }
-                break;
-            default:
-                return;
-        }
+                    break;
+                case "я":
+                    if (!e.shiftKey) {
+                        e.preventDefault();
+                        dispatch(undo());
+                    }
+                    break;
+                case "н":
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        dispatch(redo());
+                    }
+                    break;
+                default:
+                    return;
+            }
         };
 
         document.addEventListener("keydown", handleKeyDown);
@@ -133,7 +147,7 @@ export default function Presentation(): JSX.Element {
 
     return (
         <div className={styles.editor}>
-            <Header />
+            <Header onClick={onLogout} onToolAction={handleToolAction} />
             <Tools onToolAction={handleToolAction} />
 
             <div className={styles.main}>

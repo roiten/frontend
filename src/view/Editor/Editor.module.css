@@ -1,10 +1,14 @@
+body {
+    background: white;
+}
+
 .editor {
     display: flex;
     flex-direction: column;
     gap: 20px;
     height: calc(100vh - 16px);
     position: relative;
-    min-width: calc(340px + 600px + 120px);
+    width: 100vw;
 }
 
 .main {

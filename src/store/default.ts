@@ -1,5 +1,6 @@
 import type { Editor, Background } from "./types.ts";
 
+
 export const TEXT_PRESETS = {
     type: "text",
     description: "",
@@ -23,6 +24,7 @@ export const createDefaultPresentation = (): Editor => ({
         meta: {
             title: "New presentation",
             author: "unknown",
+            presentationId: "",
             createdAt: Date.now(),
             editedAt: Date.now(),
         },

@@ -15,6 +15,7 @@ export default function Infobar() {
             <span>Автор: {author || "неизвестен"}</span>
             <span>Создано: {safeCreatedAt.toLocaleString()}</span>
             <span>Изменено: {safeEditedAt.toLocaleString()}</span>
+            <span>Состояние презентации: {"Сохранена"}</span>
         </div>
     );
 }

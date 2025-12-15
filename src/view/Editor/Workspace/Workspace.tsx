@@ -50,6 +50,7 @@ export default function Workspace({
                         reader.onload = () => {
                             const dataUrl = reader.result as string;
                             addImageFromUrl(dataUrl);
+                            console.log(dataUrl)
                         };
                         reader.readAsDataURL(file);
                         e.preventDefault();

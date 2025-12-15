@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Editor, Selection } from "../types.ts";
+import type { Selection } from "../types.ts";
 
 const initialState: Selection = {
     currentSlide: null,

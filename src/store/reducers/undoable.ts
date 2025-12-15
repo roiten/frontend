@@ -1,35 +1,17 @@
 import type { Reducer, UnknownAction } from "redux";
-import type {
-    MetaData,
-    Slide,
-    Selection,
-} from "./types";
+import type { Editor, Presentation } from "../types";
 
-//убрать!
-export type PresentState = {
-    meta: MetaData;
-    slides: Slide[];
-    selection: Selection;
-};
+const UNDO = "history/UNDO";
+const REDO = "history/REDO";
+const HISTORY_SIZE = 50;
 
-export const UNDO = "history/UNDO";
-export const REDO = "history/REDO";
+const undo = () => ({ type: UNDO });
+const redo = () => ({ type: REDO });
 
-export const undo = () => ({ type: UNDO });
-export const redo = () => ({ type: REDO });
-
-export function undoable<S extends PresentState>(
-    reducer: Reducer<S, UnknownAction>,
-) {
+function undoable(reducer: Reducer<Presentation, UnknownAction>) {
     const initialState = reducer(undefined, { type: "@@INIT" });
 
-    type UndoableState = {
-        past: S[];
-        present: S;
-        future: S[];
-    };
-
-    const undoableInitialState: UndoableState = {
+    const undoableInitialState: Editor = {
         past: [],
         present: initialState,
         future: [],
@@ -38,7 +20,7 @@ export function undoable<S extends PresentState>(
     return function undoableReducer(
         state = undoableInitialState,
         action: UnknownAction,
-    ): UndoableState {
+    ): Editor {
         const { past, present, future } = state;
 
         switch (action.type) {
@@ -67,22 +49,20 @@ export function undoable<S extends PresentState>(
             default: {
                 const newPresent = reducer(present, action);
 
-                const onlySelectionChanged = (
-                    newPresent !== present &&
-                    newPresent.meta === present.meta &&
-                    newPresent.slides === present.slides &&
-                    newPresent.selection !== present.selection
-                );
-
-                if (newPresent === present || onlySelectionChanged) {
+                if (newPresent.slides === present.slides && newPresent.meta === present.meta) {
                     return {
                         ...state,
                         present: newPresent,
                     };
                 }
 
+                const newPast = [...past, present];
+                if (newPast.length > HISTORY_SIZE) {
+                    newPast.shift();
+                }
+
                 return {
-                    past: [...past, present],
+                    past: newPast,
                     present: newPresent,
                     future: [],
                 };
@@ -90,3 +70,5 @@ export function undoable<S extends PresentState>(
         }
     };
 }
+
+export { undoable, undo, redo, UNDO, REDO };

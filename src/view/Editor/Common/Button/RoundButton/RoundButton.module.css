@@ -15,6 +15,15 @@
     border: 1px solid blue;
 }
 
+.disabledTool {
+    border-color: #cfcfcf;
+    cursor: not-allowed;
+}
+
+.disabledTool:hover {
+    border: 1px solid #cfcfcf;
+}
+
 .icon {
     width: 18px;
     height: 18px;
