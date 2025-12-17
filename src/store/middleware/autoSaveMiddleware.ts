@@ -1,37 +1,32 @@
 import { type Middleware } from "@reduxjs/toolkit";
-import {
-    updatePresentationDocument,
-} from "../appWrite/api";
-import type { Editor } from "../types";
+import { updatePresentationDocument } from "../appWrite/api";
+import type { RootState } from "../types";
 
 let saveTimeout: number | null = null;
 
-export const autoSaveMiddleware: Middleware<{}, Editor> =
+const autoSaveMiddleware: Middleware<{}, RootState> =
     (store) => (next) => async (action) => {
-        const prevState = store.getState();
+        const prev = store.getState().editor.present;
         const result = next(action);
-        const currState = store.getState();
-
-        const { present: prev } = prevState;
-        const { present: curr } = currState;
+        const curr = store.getState().editor.present;
 
         const slidesChanged = curr.slides !== prev.slides;
-        const metaChanged = curr.meta !== prev.meta;
+        const metaChanged = curr.meta.title !== prev.meta.title;
         const presentationId = curr.meta.presentationId;
 
-        if ((slidesChanged || metaChanged) && presentationId != "") {
-            if (saveTimeout) {
-                clearTimeout(saveTimeout);
-            }
+        if ((slidesChanged || metaChanged) && presentationId) {
+            if (saveTimeout) clearTimeout(saveTimeout);
 
-            saveTimeout = window.setTimeout(() => {
+            saveTimeout = setTimeout(() => {
                 saveTimeout = null;
-                console.log("Данные отправлены на сервер");
-                updatePresentationDocument(presentationId, curr).catch((err) =>
-                    console.error("Ошибка автосохранения:", err),
-                );
+                console.log("autosave fired", action);
+
+                updatePresentationDocument(presentationId, curr)
+                    .catch(console.error);
             }, 5000);
         }
 
         return result;
     };
+
+export { autoSaveMiddleware };

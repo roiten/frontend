@@ -1,18 +1,17 @@
 import styles from "./IslandModal.module.css";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {editSlideBackground} from "../../../../store/reducers/slidesReducer.ts";
-import type { Editor } from "../../../../store/types.ts";
+import { editSlideBackground } from "../../../../store/reducers/slidesReducer.ts";
+import { useAppDispatch, useAppSelector } from "../../../../store/store.ts";
 
 type BackgroundModalProps = {
     onClose: () => void;
 };
 
 export default function BackgroundModal({ onClose }: BackgroundModalProps) {
-    const selection = useSelector((state: Editor) => state.present.selection);
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const dispatch = useDispatch();
+    const selection = useAppSelector((state) => state.editor.present.selection);
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const dispatch = useAppDispatch();
     const [colorBackground, setColorBackground] = useState<string>("white");
     const [urlBackground, setUrlBackground] = useState<string>("");
 
@@ -20,8 +19,13 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         const slideId = selection.currentSlide;
         if (!slideId) return;
 
-
-        dispatch(editSlideBackground({ slideId, background: { type: "color", color: color } }));    };
+        dispatch(
+            editSlideBackground({
+                slideId,
+                background: { type: "color", color: color },
+            }),
+        );
+    };
 
     const handleEditSlideBackgroundImage = (url: string) => {
         const slideId = selection.currentSlide;
@@ -31,11 +35,14 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         if (!slide) return;
 
         dispatch(
-            editSlideBackground({slideId, background: {
-                type: "picture",
-                source: url,
-                transparency: 1,
-            }}),
+            editSlideBackground({
+                slideId,
+                background: {
+                    type: "picture",
+                    source: url,
+                    transparency: 1,
+                },
+            }),
         );
     };
 

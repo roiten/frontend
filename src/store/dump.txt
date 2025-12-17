@@ -1,0 +1,1044 @@
+-адрес
+./selectors.ts
+-код
+import type { Text, Selection, Slide } from "./types";
+
+const getTextObjectById = (
+    selection: Selection,
+    slides: Slide[],
+    objectId: string,
+): Text | null => {
+    const currentSlide = selection.currentSlide;
+    if (!currentSlide) return null;
+
+    const current = slides.find((slide) => slide.id === currentSlide);
+    if (!current) return null;
+
+    const foundObject = current.content.find((obj) => obj.id === objectId);
+    if (!foundObject || foundObject.type != "text") return null;
+    return foundObject;
+};
+
+export {
+    getTextObjectById,
+}
+
+-адрес
+./middleware/autoSaveMiddleware.ts
+-код
+import { type Middleware } from "@reduxjs/toolkit";
+import {
+    updatePresentationDocument,
+} from "../appWrite/api";
+import type { Editor } from "../types";
+
+let saveTimeout: number | null = null;
+
+const getSaveTimeout = () => {
+    return saveTimeout
+}
+
+const autoSaveMiddleware: Middleware<{}, Editor> =
+    (store) => (next) => async (action) => {
+        const prevState = store.getState();
+        const result = next(action);
+        const currState = store.getState();
+
+        const { present: prev } = prevState;
+        const { present: curr } = currState;
+
+        const slidesChanged = curr.slides !== prev.slides;
+        const metaChanged = curr.meta.title !== prev.meta.title;
+        const presentationId = curr.meta.presentationId;
+
+        if ((slidesChanged || metaChanged) && presentationId != "") {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+            }
+
+            saveTimeout = setTimeout(() => {
+                saveTimeout = null;
+                console.log("Данные отправлены на сервер");
+                updatePresentationDocument(presentationId, curr).catch((err) =>
+                    console.error("Ошибка автосохранения:", err),
+                );
+            }, 5000);
+        }
+
+        return result;
+    };
+
+    export {autoSaveMiddleware, getSaveTimeout}
+
+-адрес
+./middleware/updateMetadataMiddleware.ts
+-код
+import { type Middleware } from "@reduxjs/toolkit";
+import type { Editor } from "../types";
+import { updateMetaData } from "../reducers/presentationReducer";
+
+const updateMetadataMiddleware: Middleware<{}, Editor> =
+    (store) => (next) => (action) => {
+        const prevState = store.getState();
+        const result = next(action);
+        const currState = store.getState();
+
+        const { present: prev } = prevState;
+        const { present: curr } = currState;
+
+        const slidesChanged = curr.slides !== prev.slides;
+
+        if (slidesChanged) {
+            store.dispatch(updateMetaData());
+        }
+
+        return result;
+    };
+
+export { updateMetadataMiddleware };
+
+-адрес
+./store.ts
+-код
+import { configureStore } from "@reduxjs/toolkit";
+import editorReducer from "./reducers/editorReducer";
+import { undoableReducer } from "./reducers/undoableReducer";
+import { useDispatch, useSelector } from "react-redux";
+import { autoSaveMiddleware } from "./middleware/autoSaveMiddleware";
+import { updateMetadataMiddleware } from "./middleware/updateMetadataMiddleware";
+
+const undoableEditorReducer = undoableReducer(editorReducer);
+
+const store = configureStore({
+    reducer: undoableEditorReducer,
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(
+            updateMetadataMiddleware,
+            autoSaveMiddleware,
+        ),
+});
+
+type AppDispatch = typeof store.dispatch;
+type RootState = ReturnType<typeof store.getState>;
+const useAppDispatch = () => useDispatch<AppDispatch>();
+const useAppSelector = useSelector.withTypes<RootState>();
+
+export {
+    store,
+    useAppDispatch,
+    useAppSelector,
+
+    type AppDispatch,
+    type RootState,
+}
+-адрес
+./appWrite/api.ts
+-код
+import {
+    Account,
+    Databases,
+    Storage,
+    ID,
+    Permission,
+    Query,
+    Role,
+} from "appwrite";
+
+import { client } from "./client";
+import type { Editor, Image } from "../types";
+
+const account = new Account(client);
+const databases = new Databases(client);
+const storage = new Storage(client);
+
+const DATABASE_ID = "6936e8660028641c3f2f";
+const PRESENTATIONS_COLLECTION_ID = "result";
+const BUCKET_ID = "6935aeb30015249b4b34";
+
+async function getCurrentUser() {
+    try {
+        return await account.get();
+    } catch {
+        return null;
+    }
+}
+
+async function registerUser(email: string, password: string, username: string) {
+    return await account.create(ID.unique(), email, password, username);
+}
+
+async function loginUser(email: string, password: string) {
+    return await account.createEmailSession(email, password);
+}
+
+async function deleteCurrentSession() {
+    try {
+        await account.deleteSession("current");
+    } catch (error) {
+        console.error("Error deleting session:", error);
+        throw error;
+    }
+}
+
+async function createPresentationDocument(
+    userId: string,
+    initialData: Editor["present"],
+) {
+    try {
+        const cloned = structuredClone(initialData);
+        await handleMedia(cloned);
+
+        const newDoc = await databases.createDocument(
+            DATABASE_ID,
+            PRESENTATIONS_COLLECTION_ID,
+            ID.unique(),
+            {
+                userId,
+                title: cloned.meta.title,
+                content: JSON.stringify(cloned),
+            },
+            [
+                Permission.read(Role.user(userId)),
+                Permission.update(Role.user(userId)),
+                Permission.delete(Role.user(userId)),
+                Permission.write(Role.user(userId)),
+            ],
+        );
+
+        return {
+            document: newDoc,
+            processedData: cloned,
+        };
+    } catch (error) {
+        console.error("Error creating presentation:", error);
+        throw error;
+    }
+}
+
+async function updatePresentationDocument(
+    presentationId: string,
+    updatedData: Editor["present"],
+) {
+    try {
+        const cloned = structuredClone(updatedData);
+        await handleMedia(cloned);
+
+        const response = await databases.updateDocument(
+            DATABASE_ID,
+            PRESENTATIONS_COLLECTION_ID,
+            presentationId,
+            {
+                title: cloned.meta.title || "Untitled Presentation",
+                content: JSON.stringify(cloned),
+            },
+        );
+
+        return {
+            document: response,
+            processedData: cloned,
+        };
+    } catch (error) {
+        console.error("Error updating presentation:", error);
+        throw error;
+    }
+}
+
+async function getPresentationDocumentsByUserId(userId: string) {
+    try {
+        const response = await databases.listDocuments(
+            DATABASE_ID,
+            PRESENTATIONS_COLLECTION_ID,
+            [Query.equal("userId", userId)],
+        );
+        return response.total > 0 ? response.documents : null;
+    } catch (error) {
+        console.error("Error fetching docs:", error);
+        throw error;
+    }
+}
+
+async function getPresentationDocumentById(presentationId: string) {
+    try {
+        const response = await databases.listDocuments(
+            DATABASE_ID,
+            PRESENTATIONS_COLLECTION_ID,
+            [Query.equal("$id", presentationId)],
+        );
+        return response.total > 0 ? response.documents[0] : null;
+    } catch (error) {
+        console.error("Error fetching doc:", error);
+        throw error;
+    }
+}
+
+function checkLocalMedia(data: Editor["present"]): Image[] {
+    const local: Image[] = [];
+
+    for (const slide of data.slides) {
+        for (const obj of slide.content) {
+            if (obj.type === "image" && obj.source.startsWith("data:")) {
+                local.push(obj as Image);
+            }
+        }
+    }
+
+    return local;
+}
+
+async function uploadImage(image: Image): Promise<string> {
+    const file = base64ToFile(image.source, `img-${Date.now()}.png`);
+    const uploaded = await storage.createFile(BUCKET_ID, ID.unique(), file);
+    return uploaded.$id;
+}
+
+function base64ToFile(dataUrl: string, filename: string): File {
+    const [header, base64] = dataUrl.split(",");
+
+    if (!header || !base64) {
+        throw new Error("Invalid data URL");
+    }
+
+    const match = header.match(/data:(.*?);/);
+    if (!match) {
+        throw new Error("Invalid MIME header");
+    }
+
+    const mime = match[1];
+    const bstr = atob(base64);
+    const u8arr = new Uint8Array(bstr.length);
+
+    for (let i = 0; i < bstr.length; i++) {
+        u8arr[i] = bstr.charCodeAt(i);
+    }
+
+    return new File([u8arr], filename, { type: mime });
+}
+
+async function handleMedia(data: Editor["present"]) {
+    const localMedia = checkLocalMedia(data);
+
+    for (const img of localMedia) {
+        const fileId = await uploadImage(img);
+        const url = storage.getFileView(BUCKET_ID, fileId).href;
+        img.source = url;
+    }
+
+    return data;
+}
+
+async function deleteSession() {
+    await account.deleteSession("current");
+}
+
+export {
+    getPresentationDocumentById,
+    getPresentationDocumentsByUserId,
+    updatePresentationDocument,
+    createPresentationDocument,
+    deleteCurrentSession,
+    loginUser,
+    registerUser,
+    getCurrentUser,
+    deleteSession,
+};
+
+-адрес
+./appWrite/client.ts
+-код
+import { Client } from "appwrite";
+
+export const client = new Client()
+  .setEndpoint("https://syd.cloud.appwrite.io/v1")
+  .setProject("691eb9d4000abbc15a03");
+
+-адрес
+./dump.txt
+-код
+
+-адрес
+./default.ts
+-код
+import type { Editor, Background } from "./types.ts";
+import { v4 as uuid } from "uuid";
+
+export const TEXT_PRESETS = {
+    type: "text",
+    description: "",
+    transparency: 1,
+    position: { x: 50, y: 50 },
+    size: { width: 200, height: 50 },
+    font: {
+        family: "Roboto",
+        color: "#000000",
+        size: 18,
+        weight: 400,
+        textDecoration: "none",
+        textAlign: "left",
+    },
+} as const;
+
+export const createDefaultPresentation = (): Editor => {
+    const newSlideId = uuid();
+    
+    return {
+        past: [],
+        future: [],
+        present: {
+            meta: {
+                title: "New presentation",
+                author: "unknown",
+                presentationId: "",
+                createdAt: Date.now(),
+                editedAt: Date.now(),
+            },
+            slides: [
+                {
+                    id: newSlideId,
+                    background: { type: "color", color: "white" },
+                    content: []
+                }
+            ],
+            selection: {
+                currentSlide: newSlideId,
+                selectedObjects: null,
+            },
+        },
+    };
+};
+
+export const IMAGE_PRESETS = {
+    type: "image",
+    position: { x: 50, y: 50 },
+    size: { width: 200, height: 350 },
+    transparency: 1,
+} as const;
+
+export const DEFAULT_BACKGROUND: Background = {
+    type: "color",
+    color: "white",
+} as const;
+
+export const PREVIEW_WIDTH = 200;
+export const SLIDE_WIDTH = 1200;
+export const SLIDE_HEIGHT = 800;
+export const IMAGE_MIN_SIZE = 10;
+
+-адрес
+./types.ts
+-код
+type Presentation = {
+    meta: MetaData;
+    slides: Slide[];
+    selection: Selection;
+};
+
+type Editor = {
+    past: Presentation[];
+    present: Presentation;
+    future: Presentation[];
+};
+
+type Selection = {
+    currentSlide: string | null;
+    selectedObjects: string[] | null;
+};
+
+type MetaData = {
+    title: string;
+    author: string;
+    presentationId: string;
+    createdAt: number;
+    editedAt: number;
+}
+
+type Slide = {
+    id: string;
+    background: Background;
+    content: SlideObject[];
+};
+
+type Background = Color | Picture;
+type Color = { type: "color"; color: string };
+type Picture = { type: "picture"; source: string; transparency: number };
+
+type SlideObject = Text | Image;
+
+type Text = {
+    id: string;
+    transparency: number;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    description: string;
+    type: "text";
+    font: {
+        family: string;
+        color: string;
+        size: number;
+        weight: number;
+        textDecoration: "strikethrough" | "underline" | "none";
+        textAlign: "left" | "center" | "right" | "justify";
+    };
+};
+
+type Image = {
+    id: string;
+    transparency: number;
+    position: { x: number; y: number };
+    size: { width: number; height: number };
+    source: string;
+    type: "image";
+};
+
+type ModalType = "background-color" | "image-url" | "slides-list" | null;
+
+export type {
+    Editor,
+    Image,
+    Text,
+    Slide,
+    SlideObject,
+    Background,
+    ModalType,
+    Selection,
+    MetaData,
+    Presentation,
+};
+-адрес
+./reducers/presentationReducer.ts
+-код
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import { createDefaultPresentation } from "../default";
+import type { MetaData } from "../types";
+
+const defaultPres = createDefaultPresentation();
+
+const initialState: MetaData = {
+  title: defaultPres.present.meta.title,
+  author: defaultPres.present.meta.author,
+  presentationId: defaultPres.present.meta.presentationId,
+  createdAt: defaultPres.present.meta.createdAt,
+  editedAt: defaultPres.present.meta.editedAt,
+};
+
+const presentationReducer = createSlice({
+  name: "meta",
+  initialState,
+  reducers: {
+    setPresentationTitle(state, action: PayloadAction<string>) {
+      return { ...state, title: action.payload, editedAt: Date.now() };
+    },
+    set(_, action: PayloadAction<MetaData>) {
+      return action.payload;
+    },
+    setPresentationId(state, action: PayloadAction<string>) { 
+      return { ...state, presentationId: action.payload }; 
+    },
+    updateMetaData(state) {
+      return {...state, editedAt: Date.now()}
+    }
+  },
+});
+
+export const { setPresentationTitle, set, setPresentationId, updateMetaData } = presentationReducer.actions;
+export default presentationReducer.reducer;
+-адрес
+./reducers/editorReducer.ts
+-код
+import { combineReducers } from "@reduxjs/toolkit";
+import presentationReducer from "./presentationReducer";
+import slidesReducer from "./slidesReducer";
+import selectionReducer from "./selectionReducer";
+
+const editorReducer = combineReducers({
+    meta: presentationReducer,
+    slides: slidesReducer,
+    selection: selectionReducer,
+});
+
+export default editorReducer;
+-адрес
+./reducers/authReducer.ts
+-код
+import { createSlice } from "@reduxjs/toolkit";
+
+type AuthState = {
+    isAuth: boolean;
+};
+
+const initialState: AuthState = {
+    isAuth: false,
+};
+
+const authSlice = createSlice({
+    name: "auth",
+    initialState,
+    reducers: {
+        loginSuccess(state) {
+            state.isAuth = true;
+        },
+        logout(state) {
+            state.isAuth = false;
+        },
+    },
+});
+
+export const { loginSuccess, logout } = authSlice.actions;
+export default authSlice.reducer;
+
+-адрес
+./reducers/undoableReducer.ts
+-код
+import type { Reducer, UnknownAction } from "redux";
+import type { Editor, Presentation } from "../types";
+
+const UNDO = "history/UNDO";
+const REDO = "history/REDO";
+const HISTORY_SIZE = 50;
+
+const undo = () => ({ type: UNDO });
+const redo = () => ({ type: REDO });
+
+function undoableReducer(reducer: Reducer<Presentation, UnknownAction>) {
+    const initialPresentation: Presentation = {
+        meta: {
+            title: "New Presentation",
+            author: "",
+            presentationId: "",
+            createdAt: Date.now(),
+            editedAt: Date.now(),
+        },
+        slides: [
+            {
+                id: "",
+                background: { type: "color", color: "white" },
+                content: [],
+            },
+        ],
+        selection: {
+            currentSlide: null,
+            selectedObjects: null,
+        },
+    };
+
+    const undoableInitialState: Editor = {
+        past: [],
+        present: initialPresentation,
+        future: [],
+    };
+
+    return function undoableReducer(
+        state = undoableInitialState,
+        action: UnknownAction,
+    ): Editor {
+        const { past, present, future } = state;
+
+        switch (action.type) {
+            case UNDO: {
+                if (past.length === 0) return state;
+                const previous = past[past.length - 1];
+                const newPast = past.slice(0, -1);
+                return {
+                    past: newPast,
+                    present: previous,
+                    future: [present, ...future],
+                };
+            }
+
+            case REDO: {
+                if (future.length === 0) return state;
+                const next = future[0];
+                const newFuture = future.slice(1);
+                return {
+                    past: [...past, present],
+                    present: next,
+                    future: newFuture,
+                };
+            }
+
+            default: {
+                const newPresent = reducer(present, action);
+                if (
+                    newPresent.slides === present.slides &&
+                    newPresent.meta.title === present.meta.title
+                ) {
+                    return {
+                        ...state,
+                        present: newPresent,
+                    };
+                }
+
+                const newPast = [...past, present];
+                if (newPast.length > HISTORY_SIZE) {
+                    newPast.shift();
+                }
+
+                return {
+                    past: newPast,
+                    present: newPresent,
+                    future: [],
+                };
+            }
+        }
+    };
+}
+
+export { undoableReducer, undo, redo, UNDO, REDO };
+
+-адрес
+./reducers/slidesReducer.ts
+-код
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { Slide, SlideObject, Background, Text, Image } from "../types";
+
+const initialState: Slide[] = [];
+
+const slidesReducer = createSlice({
+    name: "slides",
+    initialState,
+    reducers: {
+        addSlide(state, action: PayloadAction<Slide>) {
+            return [
+                ...state,
+                {
+                    ...action.payload,
+                    content: action.payload.content.map(obj => ({ ...obj })),
+                    background: { ...action.payload.background }
+                }
+            ];
+        },
+
+        removeSlides(state, action: PayloadAction<string[]>) {
+            const idsToRemove = new Set(action.payload);
+            return state.filter((s) => !idsToRemove.has(s.id));
+        },
+
+        moveSlide(
+            state,
+            action: PayloadAction<{ slideIds: string[]; newIndex: number }>
+        ) {
+            const { slideIds, newIndex } = action.payload;
+            const dragged = state.filter((s) => slideIds.includes(s.id));
+            const remaining = state.filter((s) => !slideIds.includes(s.id));
+
+            return [
+                ...remaining.slice(0, newIndex),
+                ...dragged.map((s) => ({ 
+                    ...s, 
+                    content: s.content.map(obj => ({ ...obj })),
+                    background: { ...s.background }
+                })),
+                ...remaining.slice(newIndex),
+            ];
+        },
+
+        addSlideObject(
+            state,
+            action: PayloadAction<{ slideId: string; obj: SlideObject }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    content: [...slide.content, { ...action.payload.obj }],
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        removeSlideObject(
+            state,
+            action: PayloadAction<{ slideId: string; objectId: string }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.filter(
+                        (obj) => obj.id !== action.payload.objectId
+                    ).map(obj => ({ ...obj })),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editSlideBackground(
+            state,
+            action: PayloadAction<{ slideId: string; background: Background }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    background: { ...action.payload.background },
+                    content: slide.content.map(obj => ({ ...obj }))
+                };
+            });
+        },
+
+        editObjectPositionCoordinates(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                slideObject: SlideObject;
+                position: { x: number; y: number };
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position } 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editObjectPositionSize(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                slideObject: SlideObject;
+                position: { x: number; y: number };
+                size: { width: number; height: number };
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position },
+                            size: { ...action.payload.size }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editTextSize(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                textId: string;
+                size: number;
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                size: action.payload.size 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editFontFamily(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                textId: string;
+                family: string;
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                family: action.payload.family 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editTextColor(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                textId: string;
+                color: string;
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                color: action.payload.color 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        editTextDescription(
+            state,
+            action: PayloadAction<{
+                slideId: string;
+                textId: string;
+                description: string;
+            }>
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            description: action.payload.description 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
+        },
+
+        set(_, action: PayloadAction<Slide[]>) {
+            return action.payload.map((slide) => ({
+                ...slide,
+                content: slide.content.map((obj) => ({ ...obj })),
+                background: { ...slide.background }
+            }));
+        },
+    },
+});
+
+export const {
+    addSlide,
+    removeSlides,
+    moveSlide,
+    addSlideObject,
+    removeSlideObject,
+    editObjectPositionCoordinates,
+    editObjectPositionSize,
+    editTextSize,
+    editFontFamily,
+    editTextColor,
+    editTextDescription,
+    editSlideBackground,
+    set,
+} = slidesReducer.actions;
+
+export default slidesReducer.reducer;
+-адрес
+./reducers/selectionReducer.ts
+-код
+import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
+import type { Selection } from "../types.ts";
+
+const initialState: Selection = {
+    currentSlide: null,
+    selectedObjects: null,
+};
+
+const selectionReducer = createSlice({
+    name: "selection",
+    initialState,
+    reducers: {
+        chooseSlide(state, action: PayloadAction<string>) {
+            state.currentSlide = action.payload;
+        },
+        addSelectedObject(state, action: PayloadAction<string>) {
+            const current = state.selectedObjects || [];
+            if (!current.includes(action.payload)) {
+                state.selectedObjects = [...current, action.payload];
+            }
+        },
+        removeSelectedObject(state, action: PayloadAction<string>) {
+            if (state.selectedObjects) {
+                const filtered = state.selectedObjects.filter(
+                    (id) => id !== action.payload,
+                );
+                state.selectedObjects = filtered.length > 0 ? filtered : null;
+            }
+        },
+        clearSelectedObjects(state) {
+            state.selectedObjects = null;
+        },
+        set(state, action: PayloadAction<Selection>) {
+            state.currentSlide = action.payload.currentSlide;
+            state.selectedObjects = action.payload.selectedObjects;
+        },
+    },
+});
+
+export const {
+    chooseSlide,
+    addSelectedObject,
+    removeSelectedObject,
+    clearSelectedObjects,
+    set,
+} = selectionReducer.actions;
+
+export default selectionReducer.reducer;
+

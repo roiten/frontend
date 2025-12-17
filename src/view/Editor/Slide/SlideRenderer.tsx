@@ -7,6 +7,7 @@ import * as React from "react";
 type Props = {
     slide: Slide;
     scale?: number;
+    mode: "edit" | "slideshow";
     selectionProps?: {
         selectedObjectIds: string[] | null;
         onSelectObject: (objectId: string) => void;
@@ -17,6 +18,7 @@ type Props = {
 export default function SlideRenderer({
     slide,
     scale = 1,
+    mode,
     selectionProps,
 }: Props) {
     const isSelected = (id: string): boolean => {
@@ -34,7 +36,7 @@ export default function SlideRenderer({
 
     return (
         <div
-            className={styles.scaledContainer}
+            className={mode === "slideshow" ? styles.scaledContainerSlideshow : styles.scaledContainer}
             onClick={selectionProps?.onDeselectObject}
             style={{
                 transform: `scale(${scale})`,

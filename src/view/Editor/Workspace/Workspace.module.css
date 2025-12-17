@@ -13,6 +13,13 @@
     transform-origin: top left;
 }
 
+.scaledContainerSlideshow {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .workspace {
     position: relative;
     width: 1200px;

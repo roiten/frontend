@@ -1,12 +1,11 @@
 import styles from "./Workspace.module.css";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
 import { useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { addSlideObject } from "../../../store/reducers/slidesReducer.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 import * as React from "react";
 import { v4 as uuid } from "uuid";
-import type { Editor } from "../../../store/types.ts";
+import { useAppSelector, useAppDispatch } from "../../../store/store.ts";
 
 type Props = {
     scale?: number;
@@ -19,9 +18,9 @@ export default function Workspace({
     onSelectObject,
     onClearSelection,
 }: Props) {
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const selection = useSelector((state: Editor) => state.present.selection);
-    const dispatch = useDispatch();
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const selection = useAppSelector((state) => state.editor.present.selection);
+    const dispatch = useAppDispatch();
 
     const selectedObjects = selection.selectedObjects || [];
     const slide = slides.find((s) => s.id === selection.currentSlide);
@@ -108,6 +107,7 @@ export default function Workspace({
             <SlideRenderer
                 slide={slide}
                 scale={scale}
+                mode={"edit"}
                 selectionProps={{
                     selectedObjectIds: selectedObjects,
                     onSelectObject: handleSelectObject,

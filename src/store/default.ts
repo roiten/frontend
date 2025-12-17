@@ -1,5 +1,5 @@
 import type { Editor, Background } from "./types.ts";
-
+import { v4 as uuid } from "uuid";
 
 export const TEXT_PRESETS = {
     type: "text",
@@ -17,24 +17,34 @@ export const TEXT_PRESETS = {
     },
 } as const;
 
-export const createDefaultPresentation = (): Editor => ({
-    past: [],
-    future: [],
-    present: {
-        meta: {
-            title: "New presentation",
-            author: "unknown",
-            presentationId: "",
-            createdAt: Date.now(),
-            editedAt: Date.now(),
+export const createDefaultPresentation = (): Editor => {
+    const newSlideId = uuid();
+    
+    return {
+        past: [],
+        future: [],
+        present: {
+            meta: {
+                title: "New presentation",
+                author: "unknown",
+                presentationId: "",
+                createdAt: Date.now(),
+                editedAt: Date.now(),
+            },
+            slides: [
+                {
+                    id: newSlideId,
+                    background: { type: "color", color: "white" },
+                    content: []
+                }
+            ],
+            selection: {
+                currentSlide: newSlideId,
+                selectedObjects: null,
+            },
         },
-        slides: [],
-        selection: {
-            currentSlide: null,
-            selectedObjects: null,
-        },
-    },
-});
+    };
+};
 
 export const IMAGE_PRESETS = {
     type: "image",

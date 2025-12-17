@@ -5,18 +5,17 @@ import { addSlide, removeSlides } from "../../../store/reducers/slidesReducer.ts
 import { chooseSlide } from "../../../store/reducers/selectionReducer.ts";
 import { useSlideMove } from "./hooks/useSlideMove.ts";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
-import type { Editor } from '../../../store/types.ts';
 import { useAppSelector } from "../../../store/store.ts";
 
 
 export default function Slidebar() {
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const currentSlideId = useSelector((state: Editor) => state.present.selection.currentSlide);
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const currentSlideId = useAppSelector((state) => state.editor.present.selection.currentSlide);
     const presentationId = useAppSelector(
-        (state: Editor) => state.present.meta.presentationId,
+        (state) => state.editor.present.meta.presentationId,
     );
 
     const checkPresentationOpened = () => {

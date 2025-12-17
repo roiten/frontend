@@ -7,19 +7,12 @@ import {
     editFontFamily,
     editTextColor,
     editTextSize,
-    set as setSlides,
 } from "../../../store/reducers/slidesReducer.ts";
-import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
-import {
-    set as setPresentation,
-    // setPresentationId,
-} from "../../../store/reducers/presentationReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
-import * as React from "react";
 import { useAppDispatch, useAppSelector } from "../../../store/store.ts";
-// import * as appWrite from "../../../store/appWrite/api";
+import { useNavigate } from "react-router";
 
 type Tool = {
     name: string;
@@ -51,16 +44,16 @@ function getTextSelectionInfo(
 export default function Tools({ onToolAction }: ToolsProps) {
     const dispatch = useAppDispatch();
 
-    const { present } = useAppSelector((state: Editor) => state);
+    const { present } = useAppSelector((state) => state.editor);
     const slides = present.slides;
     const selection = present.selection;
     const selectedObjectIds = selection.selectedObjects || [];
+    const navigate = useNavigate();
 
-    const [, setFile] = useState<File | null>(null);
     const [tempFontSize, setTempFontSize] = useState<string>("");
     const [tempColor, setTempColor] = useState<string>("#000000");
     const presentationId = useAppSelector(
-        (state) => state.present.meta.presentationId,
+        (state) => state.editor.present.meta.presentationId,
     );
 
     const checkPresentationOpened = () => {
@@ -133,80 +126,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             icon: "/icons/shapes.svg",
             action: () => onToolAction?.("image-url"),
         },
-        // {
-        //     name: "Сохранить",
-        //     icon: "icons/floppy-disk.svg",
-        //     action: async () => {
-        //         const user = await appWrite.getCurrentUser();
-        //         if (!user) {
-        //             alert(
-        //                 "Пользователь не авторизован. Сохранение невозможно.",
-        //             );
-        //             return;
-        //         }
-
-        //         const userId = user.$id;
-
-        //         if (presentationId) {
-        //             try {
-        //                 const pres = await appWrite.updatePresentationDocument(
-        //                     presentationId,
-        //                     present,
-        //                 );
-        //                 dispatch(setSlides(pres.processedData.slides));
-        //                 console.log("Обновлено:", presentationId);
-        //             } catch (err) {
-        //                 console.error("Ошибка обновления:", err);
-        //             }
-        //         } else {
-        //             try {
-        //                 const pres = await appWrite.createPresentationDocument(
-        //                     userId,
-        //                     present,
-        //                 );
-        //                 const newId = pres.document.$id;
-
-        //                 dispatch(setPresentationId(newId));
-        //                 dispatch(setSlides(pres.processedData.slides));
-        //                 console.log("Создано и сохранено ID:", newId);
-        //             } catch (err) {
-        //                 console.error("Ошибка создания:", err);
-        //             }
-        //         }
-        // },
-        // },
-        {
-            name: "Загрузить из облака",
-            icon: "/icons/cloud-arrow-down.svg",
-            action: () => onToolAction?.("slides-list"),
-        },
     ];
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0] ?? null;
-        if (selectedFile) {
-            setFile(selectedFile);
-            readFileAsObject(selectedFile);
-        }
-    };
-
-    const readFileAsObject = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (event.target?.result) {
-                try {
-                    const parsed = JSON.parse(event.target.result as string);
-                    dispatch(setPresentation(parsed.meta));
-                    dispatch(setSlides(parsed.slides));
-                    dispatch(setSelection(parsed.selection));
-                } catch (error) {
-                    console.error("Ошибка при парсинге файла:", error);
-                    alert("Неверный формат презентации");
-                }
-            }
-        };
-        reader.readAsText(file);
-    };
 
     useEffect(() => {
         const { textObjects, allAreText } = getTextSelectionInfo(
@@ -247,19 +167,6 @@ export default function Tools({ onToolAction }: ToolsProps) {
                     }
                 />
             ))}
-
-            <div>
-                <label htmlFor="file-upload" className="upload-button">
-                    Загрузить из JSON
-                </label>
-                <input
-                    id="file-upload"
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                />
-            </div>
 
             <form>
                 <select
@@ -314,6 +221,10 @@ export default function Tools({ onToolAction }: ToolsProps) {
                     }
                 }}
             />
+
+            <span onClick={()=>{
+                navigate("/show")
+            }}>просмотр</span>
         </div>
     );
 }

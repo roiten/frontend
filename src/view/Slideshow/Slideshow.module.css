@@ -1,0 +1,12 @@
+.exit {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+}
+
+.slideWrapper {
+    height: 98vh;
+    justify-content: center;
+    align-items: center;
+    margin-top: 4vh;
+}

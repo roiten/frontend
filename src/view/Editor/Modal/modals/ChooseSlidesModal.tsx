@@ -63,7 +63,7 @@ export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
                             <div key={doc.$id} className={styles.slideCard} onClick={() => handleChooseSlide(doc.$id)}>
                                 {firstSlide && (
                                     <div className={styles.slidePreview}>
-                                        <SlideRenderer slide={firstSlide} scale={0.125} />
+                                        <SlideRenderer slide={firstSlide} scale={0.125} mode={"edit"}/>
                                     </div>
                                 )}
                                 <div className={styles.slideTitle}>{doc.title}</div>

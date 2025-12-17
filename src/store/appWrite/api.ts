@@ -135,7 +135,7 @@ async function getPresentationDocumentById(presentationId: string) {
     }
 }
 
-function validateMedia(data: Editor["present"]): Image[] {
+function checkLocalMedia(data: Editor["present"]): Image[] {
     const local: Image[] = [];
 
     for (const slide of data.slides) {
@@ -179,7 +179,7 @@ function base64ToFile(dataUrl: string, filename: string): File {
 }
 
 async function handleMedia(data: Editor["present"]) {
-    const localMedia = validateMedia(data);
+    const localMedia = checkLocalMedia(data);
 
     for (const img of localMedia) {
         const fileId = await uploadImage(img);

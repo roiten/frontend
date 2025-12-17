@@ -1,10 +1,9 @@
 import styles from "./Infobar.module.css";
-import { useSelector } from "react-redux";
-import type { Editor } from "../../../store/types.ts";
+import { useAppSelector } from "../../../store/store.ts";
 
 export default function Infobar() {
-    const { author, createdAt, editedAt } = useSelector(
-        (state: Editor) => state.present.meta
+    const { author, createdAt, editedAt } = useAppSelector(
+        (state) => state.editor.present.meta
     );
 
     const safeCreatedAt = new Date(createdAt);
@@ -15,7 +14,6 @@ export default function Infobar() {
             <span>Автор: {author || "неизвестен"}</span>
             <span>Создано: {safeCreatedAt.toLocaleString()}</span>
             <span>Изменено: {safeEditedAt.toLocaleString()}</span>
-            <span>Состояние презентации: {"Сохранена"}</span>
         </div>
     );
 }

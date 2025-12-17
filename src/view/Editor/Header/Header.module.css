@@ -104,17 +104,6 @@
 }
 
 .fileMenuButton:hover {
-    background: #f1f3f4;
-    border-color: #a0a0a0;
-}
-
-.fileMenuButton[aria-expanded="true"] {
-    background: rgba(26, 115, 232, 0.08);
-    border-color: #1a73e8;
-    color: #1a73e8;
-}
-
-.fileMenuButton:focus {
     outline: none;
     border-color: #1a73e8;
 }
@@ -140,18 +129,6 @@
     min-width: 200px;
     padding: 8px 0;
     z-index: 1000;
-    animation: fadeIn 0.1s ease-out;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(-4px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .menuItem {
@@ -173,11 +150,6 @@
 
 .menuItem:hover {
     background-color: rgba(26, 115, 232, 0.04);
-}
-
-.menuItem:focus {
-    outline: none;
-    background-color: rgba(26, 115, 232, 0.08);
 }
 
 .menuItemIcon {

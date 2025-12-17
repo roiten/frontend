@@ -1,12 +1,12 @@
 import { useDispatch } from "react-redux";
 import styles from "./Editor.module.css";
-import type { ModalType } from "../../store/types.ts";
+import type { Editor, ModalType } from "../../store/types.ts";
 import Header from "./Header/Header.tsx";
 import Infobar from "./Infobar/Infobar.tsx";
 import Slidebar from "./Slidebar/Slidebar.tsx";
 import Tools from "./Tools/Tools.tsx";
 import Workspace from "./Workspace/Workspace.tsx";
-import { type JSX, useCallback, useState } from "react";
+import { type JSX, useCallback, useEffect, useState } from "react";
 import Modal from "./Modal/Modal.tsx";
 import BackgroundModal from "./Modal/modals/BackgroundModal.tsx";
 import ImagePasteUrlModal from "./Modal/modals/ImagePasteUrlModal.tsx";
@@ -16,18 +16,13 @@ import {
     removeSelectedObject,
 } from "../../store/reducers/selectionReducer.ts";
 import * as React from "react";
-import type { AppDispatch } from "../../store/store";
-import { undo, redo } from "../../store/reducers/undoable.ts";
+import { useAppSelector, type AppDispatch } from "../../store/store";
+import { undo, redo } from "../../store/reducers/undoableReducer.ts";
 import ChooseSlidesModal from "./Modal/modals/ChooseSlidesModal.tsx";
 
-type PresentationProps = {
-    onLogout: () => void;
-};
-
-export default function Presentation({
-    onLogout,
-}: PresentationProps): JSX.Element {
+export default function Presentation(): JSX.Element {
     const dispatch = useDispatch<AppDispatch>();
+    const slides = useAppSelector((state) => state.editor.present.slides);
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [currentModal, setCurrentModal] = useState<ModalType>(null);
@@ -105,7 +100,7 @@ export default function Presentation({
         [dispatch],
     );
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isCtrlOrCmd = e.ctrlKey || e.metaKey;
             if (!isCtrlOrCmd) return;
@@ -143,30 +138,38 @@ export default function Presentation({
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [dispatch]);
+    }, []);
+
+    useEffect(()=>{
+        console.log(slides)
+    }, [slides])
 
     return (
-        <div className={styles.editor}>
-            <Header onClick={onLogout} onToolAction={handleToolAction} />
-            <Tools onToolAction={handleToolAction} />
-
-            <div className={styles.main}>
-                <Slidebar />
-                <Workspace
-                    onSelectObject={handleSelectObject}
-                    onClearSelection={handleClearSelection}
+        <div className={styles.app}>
+            <div className={styles.editor}>
+                <Header
+                    onToolAction={handleToolAction}
                 />
+                <Tools onToolAction={handleToolAction} />
+
+                <div className={styles.main}>
+                    <Slidebar />
+                    <Workspace
+                        onSelectObject={handleSelectObject}
+                        onClearSelection={handleClearSelection}
+                    />
+                </div>
+
+                <Infobar />
+
+                <Modal
+                    isOpen={modalIsOpen}
+                    onClose={closeModal}
+                    title={getModalTitle()}
+                >
+                    {getModalContent()}
+                </Modal>
             </div>
-
-            <Infobar />
-
-            <Modal
-                isOpen={modalIsOpen}
-                onClose={closeModal}
-                title={getModalTitle()}
-            >
-                {getModalContent()}
-            </Modal>
         </div>
     );
 }

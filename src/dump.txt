@@ -1,7 +1,7 @@
 -адрес
 ./App.css
 -код
-.auth-mode {
+.authMode {
     background: rgba(79, 191, 159, 0.6) !important;
     display: flex;
     justify-content: center;
@@ -11,7 +11,7 @@
     overflow: hidden;
 }
 
-.editor-mode {
+.editorMode {
     background: white !important;
     margin: 0;
     padding: 0;
@@ -44,389 +44,103 @@ export {
 }
 
 -адрес
-./store/undoable.ts
--код
-import type { Reducer, UnknownAction } from "redux";
-import type { Editor, Presentation } from "./types";
-
-const UNDO = "history/UNDO";
-const REDO = "history/REDO";
-const HISTORY_SIZE = 50;
-
-const undo = () => ({ type: UNDO });
-const redo = () => ({ type: REDO });
-
-function undoable(reducer: Reducer<Presentation, UnknownAction>) {
-    const initialState = reducer(undefined, { type: "@@INIT" });
-
-    const undoableInitialState: Editor = {
-        past: [],
-        present: initialState,
-        future: [],
-    };
-
-    return function undoableReducer(
-        state = undoableInitialState,
-        action: UnknownAction,
-    ): Editor {
-        const { past, present, future } = state;
-
-        switch (action.type) {
-            case UNDO: {
-                if (past.length === 0) return state;
-                const previous = past[past.length - 1];
-                const newPast = past.slice(0, -1);
-                return {
-                    past: newPast,
-                    present: previous,
-                    future: [present, ...future],
-                };
-            }
-
-            case REDO: {
-                if (future.length === 0) return state;
-                const next = future[0];
-                const newFuture = future.slice(1);
-                return {
-                    past: [...past, present],
-                    present: next,
-                    future: newFuture,
-                };
-            }
-
-            default: {
-                const newPresent = reducer(present, action);
-
-                if (newPresent.slides === present.slides && newPresent.meta === present.meta) {
-                    return {
-                        ...state,
-                        present: newPresent,
-                    };
-                }
-
-                const newPast = [...past, present];
-                if (newPast.length > HISTORY_SIZE) {
-                    newPast.shift();
-                }
-
-                return {
-                    past: newPast,
-                    present: newPresent,
-                    future: [],
-                };
-            }
-        }
-    };
-}
-
-export { undoable, undo, redo, UNDO, REDO };
-
--адрес
 ./store/middleware/autoSaveMiddleware.ts
 -код
-// ./middleware/autoSaveMiddleware.ts
 import { type Middleware } from "@reduxjs/toolkit";
 import { updatePresentationDocument } from "../appWrite/api";
-import type { Editor } from "../types";
+import type { RootState } from "../types";
 
 let saveTimeout: number | null = null;
 
-export const autoSaveMiddleware: Middleware<{}, Editor> =
-  (store) => (next) => (action) => {
-    const prevState = store.getState();
-    const result = next(action);
-    const currState = store.getState();
+const autoSaveMiddleware: Middleware<{}, RootState> =
+    (store) => (next) => async (action) => {
+        const prev = store.getState().editor.present;
+        const result = next(action);
+        const curr = store.getState().editor.present;
 
-    const { present: prev } = prevState;
-    const { present: curr } = currState;
+        const slidesChanged = curr.slides !== prev.slides;
+        const metaChanged = curr.meta.title !== prev.meta.title;
+        const presentationId = curr.meta.presentationId;
 
-    // Сравниваем ПО ССЫЛКАМ — как вы и просили
-    const slidesChanged = curr.slides !== prev.slides;
-    const metaChanged = curr.meta !== prev.meta;
-    const presentationId = curr.meta.presentationId;
+        if ((slidesChanged || metaChanged) && presentationId) {
+            if (saveTimeout) clearTimeout(saveTimeout);
 
-    // Сохраняем ТОЛЬКО если:
-    // - изменились slides ИЛИ meta (по ссылке),
-    // - и есть presentationId
-    if ((slidesChanged || metaChanged)) {
-      // Отмена предыдущего таймера
-      if (saveTimeout) {
-        clearTimeout(saveTimeout);
-      }
+            saveTimeout = setTimeout(() => {
+                saveTimeout = null;
+                console.log("autosave fired", action);
 
-      // Запуск нового debounce-таймера
-      saveTimeout = window.setTimeout(() => {
-        saveTimeout = null;
-        console.log("Данные отправлены на сервер")
-        updatePresentationDocument(presentationId, curr)
-          .catch((err) => console.error("auto save failed:", err));
-      }, 15_000);
-    }
+                updatePresentationDocument(presentationId, curr)
+                    .catch(console.error);
+            }, 5000);
+        }
 
-    return result;
-  };
+        return result;
+    };
+
+export { autoSaveMiddleware };
+
+-адрес
+./store/middleware/updateMetadataMiddleware.ts
+-код
+import { type Middleware } from "@reduxjs/toolkit";
+import { updateMetaData } from "../reducers/presentationReducer";
+import type { RootState } from "../types";
+
+const updateMetadataMiddleware: Middleware<{}, RootState> =
+    (store) => (next) => (action) => {
+        const prev = store.getState().editor.present;
+        const result = next(action);
+        const curr = store.getState().editor.present;
+
+        if (curr.slides !== prev.slides) {
+            store.dispatch(updateMetaData());
+        }
+
+        return result;
+    };
+
+export { updateMetadataMiddleware };
+
 -адрес
 ./store/store.ts
 -код
 import { configureStore } from "@reduxjs/toolkit";
 import editorReducer from "./reducers/editorReducer";
-import { undoable } from "./undoable";
-import { useDispatch, useSelector } from "react-redux";
-import { updatePresentationDocument } from "./appWrite/api";
+import { undoableReducer } from "./reducers/undoableReducer";
+import authReducer from "./reducers/authReducer";
 import { autoSaveMiddleware } from "./middleware/autoSaveMiddleware";
+import { updateMetadataMiddleware } from "./middleware/updateMetadataMiddleware";
+import { useDispatch, useSelector } from "react-redux";
 
-const undoableEditorReducer = undoable(editorReducer);
+const undoableEditorReducer = undoableReducer(editorReducer);
 
-function syncMiddleware() {
-    return (store: any) => (next: any) => (action: any) => {
-        const prevState = store.getState();
-        const result = next(action);
-        const currState = store.getState();
-
-        const presentationId = currState.present.meta.presentationId;
-
-        if (!presentationId) {
-            return result;
-        }
-
-        const hasChanges =
-            currState.present.slides !== prevState.present.slides ||
-            currState.present.meta.title !== prevState.present.meta.title;
-
-        const handleChanges = () => {
-            updatePresentationDocument(presentationId, currState.present).catch(
-                (err) => console.error("Failed to sync presentation:", err),
-            );
-        };
-
-        if (hasChanges) {
-            setTimeout(handleChanges, 15000);
-        }
-
-        return result;
-    };
-}
-
-export const store = configureStore({
-    reducer: undoableEditorReducer,
+const store = configureStore({
+    reducer: {
+        editor: undoableEditorReducer,
+        auth: authReducer,
+    },
     middleware: (getDefaultMiddleware) =>
-        getDefaultMiddleware().concat(autoSaveMiddleware),
+        getDefaultMiddleware().concat(
+            updateMetadataMiddleware,
+            autoSaveMiddleware,
+        ),
 });
 
-export type AppDispatch = typeof store.dispatch;
-export type RootState = ReturnType<typeof store.getState>;
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector = useSelector.withTypes<RootState>();
+type AppDispatch = typeof store.dispatch;
+type RootState = ReturnType<typeof store.getState>;
 
--адрес
-./store/appWrite.ts
--код
-// import {
-//     Account,
-//     Databases,
-//     Storage,
-//     ID,
-//     Permission,
-//     Query,
-//     Role,
-// } from "appwrite";
 
-// import { client } from "./appWrite/client";
-// import type { Editor, Image } from "./types";
+const useAppDispatch = () => useDispatch<AppDispatch>();
+const useAppSelector = useSelector.withTypes<RootState>();
 
-// const DATABASE_ID = "6936e8660028641c3f2f";
-// const PRESENTATIONS_COLLECTION_ID = "result";
-// const BUCKET_ID = "6935aeb30015249b4b34";
+export {
+    store,
+    useAppDispatch,
+    useAppSelector,
 
-// export class AppwriteService {
-//     databases: Databases;
-//     account: Account;
-//     storage: Storage;
-
-//     constructor() {
-//         this.account = new Account(client);
-//         this.databases = new Databases(client);
-//         this.storage = new Storage(client);
-//     }
-
-//     async loginUser(email: string, password: string, username: string) {
-//         await this.account.create(ID.unique(), email, password, username);
-//     }
-
-//     async createPresentationDocument(
-//         userId: string,
-//         initialData: Editor["present"],
-//     ) {
-//         try {
-//             const cloned = structuredClone(initialData);
-//             await this.handleMedia(cloned);
-
-//             const newDoc = await this.databases.createDocument(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 ID.unique(),
-//                 {
-//                     userId,
-//                     title: cloned.meta.title,
-//                     content: JSON.stringify(cloned),
-//                 },
-//                 [
-//                     Permission.read(Role.user(userId)),
-//                     Permission.update(Role.user(userId)),
-//                     Permission.delete(Role.user(userId)),
-//                     Permission.write(Role.user(userId)),
-//                 ],
-//             );
-
-//             return {
-//                 document: newDoc,
-//                 processedData: cloned,
-//             };
-//         } catch (error) {
-//             console.error("Error creating presentation: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async updatePresentationDocument(
-//         presentationId: string,
-//         updatedData: Editor["present"],
-//     ) {
-//         try {
-//             const cloned = structuredClone(updatedData);
-//             await this.handleMedia(cloned);
-
-//             const response = await this.databases.updateDocument(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 presentationId,
-//                 {
-//                     title: cloned.meta.title || "Untitled Presentation",
-//                     content: JSON.stringify(cloned),
-//                 },
-//             );
-
-//             return {
-//                 document: response,
-//                 processedData: cloned,
-//             };
-//         } catch (error) {
-//             console.error("Error updating presentation: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getPresentationDocumentsByUserId(userId: string) {
-//         try {
-//             const response = await this.databases.listDocuments(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 [Query.equal("userId", userId)],
-//             );
-
-//             return response.total > 0 ? response.documents : null;
-//         } catch (error) {
-//             console.error("Error fetching docs: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getPresentationDocumentById(presentationId: string) {
-//         try {
-//             const response = await this.databases.listDocuments(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 [Query.equal("$id", presentationId)],
-//             );
-
-//             return response.total > 0 ? response.documents[0] : null;
-//         } catch (error) {
-//             console.error("Error fetching doc: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getCurrentUser() {
-//         try {
-//             return await this.account.get();
-//         } catch {
-//             return null;
-//         }
-//     }
-
-//     private validateMedia(data: Editor["present"]) {
-//         const local: Image[] = [];
-
-//         for (const slide of data.slides) {
-//             for (const obj of slide.content) {
-//                 if (obj.type === "image" && obj.source.startsWith("data:")) {
-//                     local.push(obj as Image);
-//                 }
-//             }
-//         }
-
-//         return local;
-//     }
-
-//     private async uploadImage(image: Image) {
-//         const file = this.base64ToFile(image.source, `img-${Date.now()}.png`);
-
-//         const uploaded = await this.storage.createFile(
-//             BUCKET_ID,
-//             ID.unique(),
-//             file,
-//         );
-
-//         return uploaded.$id;
-//     }
-
-//     private base64ToFile(dataUrl: string, filename: string) {
-//         const [header, base64] = dataUrl.split(",");
-
-//         if (!header || !base64) {
-//             throw new Error("Invalid data URL");
-//         }
-
-//         const match = header.match(/data:(.*?);/);
-//         if (!match) {
-//             throw new Error("Invalid MIME header");
-//         }
-
-//         const mime = match[1];
-//         const bstr = atob(base64);
-//         const u8arr = new Uint8Array(bstr.length);
-
-//         for (let i = 0; i < bstr.length; i++) {
-//             u8arr[i] = bstr.charCodeAt(i);
-//         }
-
-//         return new File([u8arr], filename, { type: mime });
-//     }
-
-//     private async handleMedia(data: Editor["present"]) {
-//         const localMedia = this.validateMedia(data);
-
-//         for (const img of localMedia) {
-//             const fileId = await this.uploadImage(img);
-//             const url = this.storage.getFileView(BUCKET_ID, fileId).href;
-//             img.source = url;
-//         }
-
-//         return data;
-//     }
-
-//     async deleteCurrentSession() {
-//         try {
-//             await this.account.deleteSession("current");
-//         } catch (error) {
-//             console.error("Error deleting session: ", error);
-//             throw error;
-//         }
-//     }
-// }
-
-// export default new AppwriteService();
-
+    type AppDispatch,
+    type RootState,
+}
 -адрес
 ./store/appWrite/api.ts
 -код
@@ -567,7 +281,7 @@ async function getPresentationDocumentById(presentationId: string) {
     }
 }
 
-function validateMedia(data: Editor["present"]): Image[] {
+function checkLocalMedia(data: Editor["present"]): Image[] {
     const local: Image[] = [];
 
     for (const slide of data.slides) {
@@ -611,7 +325,7 @@ function base64ToFile(dataUrl: string, filename: string): File {
 }
 
 async function handleMedia(data: Editor["present"]) {
-    const localMedia = validateMedia(data);
+    const localMedia = checkLocalMedia(data);
 
     for (const img of localMedia) {
         const fileId = await uploadImage(img);
@@ -671,383 +385,113 @@ export {
 }
 
 -адрес
-./undoable.ts
--код
-import type { Reducer, UnknownAction } from "redux";
-import type { Editor, Presentation } from "./types";
-
-const UNDO = "history/UNDO";
-const REDO = "history/REDO";
-const HISTORY_SIZE = 50;
-
-const undo = () => ({ type: UNDO });
-const redo = () => ({ type: REDO });
-
-function undoable(reducer: Reducer<Presentation, UnknownAction>) {
-    const initialState = reducer(undefined, { type: "@@INIT" });
-
-    const undoableInitialState: Editor = {
-        past: [],
-        present: initialState,
-        future: [],
-    };
-
-    return function undoableReducer(
-        state = undoableInitialState,
-        action: UnknownAction,
-    ): Editor {
-        const { past, present, future } = state;
-
-        switch (action.type) {
-            case UNDO: {
-                if (past.length === 0) return state;
-                const previous = past[past.length - 1];
-                const newPast = past.slice(0, -1);
-                return {
-                    past: newPast,
-                    present: previous,
-                    future: [present, ...future],
-                };
-            }
-
-            case REDO: {
-                if (future.length === 0) return state;
-                const next = future[0];
-                const newFuture = future.slice(1);
-                return {
-                    past: [...past, present],
-                    present: next,
-                    future: newFuture,
-                };
-            }
-
-            default: {
-                const newPresent = reducer(present, action);
-
-                if (newPresent.slides === present.slides && newPresent.meta === present.meta) {
-                    return {
-                        ...state,
-                        present: newPresent,
-                    };
-                }
-
-                const newPast = [...past, present];
-                if (newPast.length > HISTORY_SIZE) {
-                    newPast.shift();
-                }
-
-                return {
-                    past: newPast,
-                    present: newPresent,
-                    future: [],
-                };
-            }
-        }
-    };
-}
-
-export { undoable, undo, redo, UNDO, REDO };
-
--адрес
 ./middleware/autoSaveMiddleware.ts
 -код
 import { type Middleware } from "@reduxjs/toolkit";
-import { updatePresentationDocument } from "../appWrite/api";
+import {
+    updatePresentationDocument,
+} from "../appWrite/api";
 import type { Editor } from "../types";
 
+let saveTimeout: number | null = null;
+
+const getSaveTimeout = () => {
+    return saveTimeout
+}
+
 const autoSaveMiddleware: Middleware<{}, Editor> =
-    (store) => (next) => (action) => {
+    (store) => (next) => async (action) => {
         const prevState = store.getState();
         const result = next(action);
         const currState = store.getState();
 
-        const presentationId = currState.present.meta.presentationId;
+        const { present: prev } = prevState;
+        const { present: curr } = currState;
 
-        if (!presentationId) {
-            return result;
-        }
+        const slidesChanged = curr.slides !== prev.slides;
+        const metaChanged = curr.meta.title !== prev.meta.title;
+        const presentationId = curr.meta.presentationId;
 
-        const hasChanges =
-            currState.present.slides !== prevState.present.slides ||
-            currState.present.meta.title !== prevState.present.meta.title;
+        if ((slidesChanged || metaChanged) && presentationId != "") {
+            if (saveTimeout) {
+                clearTimeout(saveTimeout);
+            }
 
-        const handleChanges = () => {
-            updatePresentationDocument(presentationId, currState.present).catch(
-                (err) => console.error("Failed to sync presentation:", err),
-            );
-        };
-
-        if (hasChanges) {
-            setTimeout(handleChanges, 15000);
+            saveTimeout = setTimeout(() => {
+                saveTimeout = null;
+                console.log("Данные отправлены на сервер");
+                updatePresentationDocument(presentationId, curr).catch((err) =>
+                    console.error("Ошибка автосохранения:", err),
+                );
+            }, 5000);
         }
 
         return result;
     };
 
-export { autoSaveMiddleware };
+    export {autoSaveMiddleware, getSaveTimeout}
+
+-адрес
+./middleware/updateMetadataMiddleware.ts
+-код
+import { type Middleware } from "@reduxjs/toolkit";
+import type { Editor } from "../types";
+import { updateMetaData } from "../reducers/presentationReducer";
+
+const updateMetadataMiddleware: Middleware<{}, Editor> =
+    (store) => (next) => (action) => {
+        const prevState = store.getState();
+        const result = next(action);
+        const currState = store.getState();
+
+        const { present: prev } = prevState;
+        const { present: curr } = currState;
+
+        const slidesChanged = curr.slides !== prev.slides;
+
+        if (slidesChanged) {
+            store.dispatch(updateMetaData());
+        }
+
+        return result;
+    };
+
+export { updateMetadataMiddleware };
 
 -адрес
 ./store.ts
 -код
 import { configureStore } from "@reduxjs/toolkit";
 import editorReducer from "./reducers/editorReducer";
-import { undoable } from "./undoable";
+import { undoableReducer } from "./reducers/undoableReducer";
 import { useDispatch, useSelector } from "react-redux";
-import { updatePresentationDocument } from "./appWrite/api";
 import { autoSaveMiddleware } from "./middleware/autoSaveMiddleware";
+import { updateMetadataMiddleware } from "./middleware/updateMetadataMiddleware";
 
-const undoableEditorReducer = undoable(editorReducer);
+const undoableEditorReducer = undoableReducer(editorReducer);
 
-function syncMiddleware() {
-    return (store: any) => (next: any) => (action: any) => {
-        const prevState = store.getState();
-        const result = next(action);
-        const currState = store.getState();
-
-        const presentationId = currState.present.meta.presentationId;
-
-        if (!presentationId) {
-            return result;
-        }
-
-        const hasChanges =
-            currState.present.slides !== prevState.present.slides ||
-            currState.present.meta.title !== prevState.present.meta.title;
-
-        const handleChanges = () => {
-            updatePresentationDocument(presentationId, currState.present).catch(
-                (err) => console.error("Failed to sync presentation:", err),
-            );
-        };
-
-        if (hasChanges) {
-            setTimeout(handleChanges, 15000);
-        }
-
-        return result;
-    };
-}
-
-export const store = configureStore({
+const store = configureStore({
     reducer: undoableEditorReducer,
-    // middleware: (getDefaultMiddleware) =>
-    //     getDefaultMiddleware().concat([syncMiddleware]),
+    middleware: (getDefaultMiddleware) =>
+        getDefaultMiddleware().concat(
+            updateMetadataMiddleware,
+            autoSaveMiddleware,
+        ),
 });
 
-export type AppDispatch = typeof store.dispatch;
-export type RootState = ReturnType<typeof store.getState>;
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector = useSelector.withTypes<RootState>();
+type AppDispatch = typeof store.dispatch;
+type RootState = ReturnType<typeof store.getState>;
+const useAppDispatch = () => useDispatch<AppDispatch>();
+const useAppSelector = useSelector.withTypes<RootState>();
 
--адрес
-./appWrite.ts
--код
-// import {
-//     Account,
-//     Databases,
-//     Storage,
-//     ID,
-//     Permission,
-//     Query,
-//     Role,
-// } from "appwrite";
+export {
+    store,
+    useAppDispatch,
+    useAppSelector,
 
-// import { client } from "./appWrite/client";
-// import type { Editor, Image } from "./types";
-
-// const DATABASE_ID = "6936e8660028641c3f2f";
-// const PRESENTATIONS_COLLECTION_ID = "result";
-// const BUCKET_ID = "6935aeb30015249b4b34";
-
-// export class AppwriteService {
-//     databases: Databases;
-//     account: Account;
-//     storage: Storage;
-
-//     constructor() {
-//         this.account = new Account(client);
-//         this.databases = new Databases(client);
-//         this.storage = new Storage(client);
-//     }
-
-//     async loginUser(email: string, password: string, username: string) {
-//         await this.account.create(ID.unique(), email, password, username);
-//     }
-
-//     async createPresentationDocument(
-//         userId: string,
-//         initialData: Editor["present"],
-//     ) {
-//         try {
-//             const cloned = structuredClone(initialData);
-//             await this.handleMedia(cloned);
-
-//             const newDoc = await this.databases.createDocument(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 ID.unique(),
-//                 {
-//                     userId,
-//                     title: cloned.meta.title,
-//                     content: JSON.stringify(cloned),
-//                 },
-//                 [
-//                     Permission.read(Role.user(userId)),
-//                     Permission.update(Role.user(userId)),
-//                     Permission.delete(Role.user(userId)),
-//                     Permission.write(Role.user(userId)),
-//                 ],
-//             );
-
-//             return {
-//                 document: newDoc,
-//                 processedData: cloned,
-//             };
-//         } catch (error) {
-//             console.error("Error creating presentation: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async updatePresentationDocument(
-//         presentationId: string,
-//         updatedData: Editor["present"],
-//     ) {
-//         try {
-//             const cloned = structuredClone(updatedData);
-//             await this.handleMedia(cloned);
-
-//             const response = await this.databases.updateDocument(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 presentationId,
-//                 {
-//                     title: cloned.meta.title || "Untitled Presentation",
-//                     content: JSON.stringify(cloned),
-//                 },
-//             );
-
-//             return {
-//                 document: response,
-//                 processedData: cloned,
-//             };
-//         } catch (error) {
-//             console.error("Error updating presentation: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getPresentationDocumentsByUserId(userId: string) {
-//         try {
-//             const response = await this.databases.listDocuments(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 [Query.equal("userId", userId)],
-//             );
-
-//             return response.total > 0 ? response.documents : null;
-//         } catch (error) {
-//             console.error("Error fetching docs: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getPresentationDocumentById(presentationId: string) {
-//         try {
-//             const response = await this.databases.listDocuments(
-//                 DATABASE_ID,
-//                 PRESENTATIONS_COLLECTION_ID,
-//                 [Query.equal("$id", presentationId)],
-//             );
-
-//             return response.total > 0 ? response.documents[0] : null;
-//         } catch (error) {
-//             console.error("Error fetching doc: ", error);
-//             throw error;
-//         }
-//     }
-
-//     async getCurrentUser() {
-//         try {
-//             return await this.account.get();
-//         } catch {
-//             return null;
-//         }
-//     }
-
-//     private validateMedia(data: Editor["present"]) {
-//         const local: Image[] = [];
-
-//         for (const slide of data.slides) {
-//             for (const obj of slide.content) {
-//                 if (obj.type === "image" && obj.source.startsWith("data:")) {
-//                     local.push(obj as Image);
-//                 }
-//             }
-//         }
-
-//         return local;
-//     }
-
-//     private async uploadImage(image: Image) {
-//         const file = this.base64ToFile(image.source, `img-${Date.now()}.png`);
-
-//         const uploaded = await this.storage.createFile(
-//             BUCKET_ID,
-//             ID.unique(),
-//             file,
-//         );
-
-//         return uploaded.$id;
-//     }
-
-//     private base64ToFile(dataUrl: string, filename: string) {
-//         const [header, base64] = dataUrl.split(",");
-
-//         if (!header || !base64) {
-//             throw new Error("Invalid data URL");
-//         }
-
-//         const match = header.match(/data:(.*?);/);
-//         if (!match) {
-//             throw new Error("Invalid MIME header");
-//         }
-
-//         const mime = match[1];
-//         const bstr = atob(base64);
-//         const u8arr = new Uint8Array(bstr.length);
-
-//         for (let i = 0; i < bstr.length; i++) {
-//             u8arr[i] = bstr.charCodeAt(i);
-//         }
-
-//         return new File([u8arr], filename, { type: mime });
-//     }
-
-//     private async handleMedia(data: Editor["present"]) {
-//         const localMedia = this.validateMedia(data);
-
-//         for (const img of localMedia) {
-//             const fileId = await this.uploadImage(img);
-//             const url = this.storage.getFileView(BUCKET_ID, fileId).href;
-//             img.source = url;
-//         }
-
-//         return data;
-//     }
-
-//     async deleteCurrentSession() {
-//         try {
-//             await this.account.deleteSession("current");
-//         } catch (error) {
-//             console.error("Error deleting session: ", error);
-//             throw error;
-//         }
-//     }
-// }
-
-// export default new AppwriteService();
-
+    type AppDispatch,
+    type RootState,
+}
 -адрес
 ./appWrite/api.ts
 -код
@@ -1188,7 +632,7 @@ async function getPresentationDocumentById(presentationId: string) {
     }
 }
 
-function validateMedia(data: Editor["present"]): Image[] {
+function checkLocalMedia(data: Editor["present"]): Image[] {
     const local: Image[] = [];
 
     for (const slide of data.slides) {
@@ -1232,7 +676,7 @@ function base64ToFile(dataUrl: string, filename: string): File {
 }
 
 async function handleMedia(data: Editor["present"]) {
-    const localMedia = validateMedia(data);
+    const localMedia = checkLocalMedia(data);
 
     for (const img of localMedia) {
         const fileId = await uploadImage(img);
@@ -1241,6 +685,10 @@ async function handleMedia(data: Editor["present"]) {
     }
 
     return data;
+}
+
+async function deleteSession() {
+    await account.deleteSession("current");
 }
 
 export {
@@ -1252,6 +700,7 @@ export {
     loginUser,
     registerUser,
     getCurrentUser,
+    deleteSession,
 };
 
 -адрес
@@ -1271,7 +720,7 @@ export const client = new Client()
 ./default.ts
 -код
 import type { Editor, Background } from "./types.ts";
-
+import { v4 as uuid } from "uuid";
 
 export const TEXT_PRESETS = {
     type: "text",
@@ -1289,24 +738,34 @@ export const TEXT_PRESETS = {
     },
 } as const;
 
-export const createDefaultPresentation = (): Editor => ({
-    past: [],
-    future: [],
-    present: {
-        meta: {
-            title: "New presentation",
-            author: "unknown",
-            presentationId: "",
-            createdAt: Date.now(),
-            editedAt: Date.now(),
+export const createDefaultPresentation = (): Editor => {
+    const newSlideId = uuid();
+    
+    return {
+        past: [],
+        future: [],
+        present: {
+            meta: {
+                title: "New presentation",
+                author: "unknown",
+                presentationId: "",
+                createdAt: Date.now(),
+                editedAt: Date.now(),
+            },
+            slides: [
+                {
+                    id: newSlideId,
+                    background: { type: "color", color: "white" },
+                    content: []
+                }
+            ],
+            selection: {
+                currentSlide: newSlideId,
+                selectedObjects: null,
+            },
         },
-        slides: [],
-        selection: {
-            currentSlide: null,
-            selectedObjects: null,
-        },
-    },
-});
+    };
+};
 
 export const IMAGE_PRESETS = {
     type: "image",
@@ -1435,10 +894,13 @@ const presentationReducer = createSlice({
     setPresentationId(state, action: PayloadAction<string>) { 
       return { ...state, presentationId: action.payload }; 
     },
+    updateMetaData(state) {
+      return {...state, editedAt: Date.now()}
+    }
   },
 });
 
-export const { setPresentationTitle, set, setPresentationId } = presentationReducer.actions;
+export const { setPresentationTitle, set, setPresentationId, updateMetaData } = presentationReducer.actions;
 export default presentationReducer.reducer;
 -адрес
 ./reducers/editorReducer.ts
@@ -1456,10 +918,138 @@ const editorReducer = combineReducers({
 
 export default editorReducer;
 -адрес
+./reducers/authReducer.ts
+-код
+import { createSlice } from "@reduxjs/toolkit";
+
+type AuthState = {
+    isAuth: boolean;
+};
+
+const initialState: AuthState = {
+    isAuth: false,
+};
+
+const authSlice = createSlice({
+    name: "auth",
+    initialState,
+    reducers: {
+        loginSuccess(state) {
+            state.isAuth = true;
+        },
+        logout(state) {
+            state.isAuth = false;
+        },
+    },
+});
+
+export const { loginSuccess, logout } = authSlice.actions;
+export default authSlice.reducer;
+
+-адрес
+./reducers/undoableReducer.ts
+-код
+import type { Reducer, UnknownAction } from "redux";
+import type { Editor, Presentation } from "../types";
+
+const UNDO = "history/UNDO";
+const REDO = "history/REDO";
+const HISTORY_SIZE = 50;
+
+const undo = () => ({ type: UNDO });
+const redo = () => ({ type: REDO });
+
+function undoableReducer(reducer: Reducer<Presentation, UnknownAction>) {
+    const initialPresentation: Presentation = {
+        meta: {
+            title: "New Presentation",
+            author: "",
+            presentationId: "",
+            createdAt: Date.now(),
+            editedAt: Date.now(),
+        },
+        slides: [
+            {
+                id: "",
+                background: { type: "color", color: "white" },
+                content: [],
+            },
+        ],
+        selection: {
+            currentSlide: null,
+            selectedObjects: null,
+        },
+    };
+
+    const undoableInitialState: Editor = {
+        past: [],
+        present: initialPresentation,
+        future: [],
+    };
+
+    return function undoableReducer(
+        state = undoableInitialState,
+        action: UnknownAction,
+    ): Editor {
+        const { past, present, future } = state;
+
+        switch (action.type) {
+            case UNDO: {
+                if (past.length === 0) return state;
+                const previous = past[past.length - 1];
+                const newPast = past.slice(0, -1);
+                return {
+                    past: newPast,
+                    present: previous,
+                    future: [present, ...future],
+                };
+            }
+
+            case REDO: {
+                if (future.length === 0) return state;
+                const next = future[0];
+                const newFuture = future.slice(1);
+                return {
+                    past: [...past, present],
+                    present: next,
+                    future: newFuture,
+                };
+            }
+
+            default: {
+                const newPresent = reducer(present, action);
+                if (
+                    newPresent.slides === present.slides &&
+                    newPresent.meta.title === present.meta.title
+                ) {
+                    return {
+                        ...state,
+                        present: newPresent,
+                    };
+                }
+
+                const newPast = [...past, present];
+                if (newPast.length > HISTORY_SIZE) {
+                    newPast.shift();
+                }
+
+                return {
+                    past: newPast,
+                    present: newPresent,
+                    future: [],
+                };
+            }
+        }
+    };
+}
+
+export { undoableReducer, undo, redo, UNDO, REDO };
+
+-адрес
 ./reducers/slidesReducer.ts
 -код
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Slide, SlideObject, Background } from "../types";
+import type { Slide, SlideObject, Background, Text, Image } from "../types";
 
 const initialState: Slide[] = [];
 
@@ -1468,7 +1058,14 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
-            return [...state, action.payload];
+            return [
+                ...state,
+                {
+                    ...action.payload,
+                    content: action.payload.content.map(obj => ({ ...obj })),
+                    background: { ...action.payload.background }
+                }
+            ];
         },
 
         removeSlides(state, action: PayloadAction<string[]>) {
@@ -1486,7 +1083,11 @@ const slidesReducer = createSlice({
 
             return [
                 ...remaining.slice(0, newIndex),
-                ...dragged.map((s) => ({ ...s, content: [...s.content] })),
+                ...dragged.map((s) => ({ 
+                    ...s, 
+                    content: s.content.map(obj => ({ ...obj })),
+                    background: { ...s.background }
+                })),
                 ...remaining.slice(newIndex),
             ];
         },
@@ -1495,38 +1096,50 @@ const slidesReducer = createSlice({
             state,
             action: PayloadAction<{ slideId: string; obj: SlideObject }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, content: [...slide.content, action.payload.obj] }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    content: [...slide.content, { ...action.payload.obj }],
+                    background: { ...slide.background }
+                };
+            });
         },
 
         removeSlideObject(
             state,
             action: PayloadAction<{ slideId: string; objectId: string }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.filter(
-                              (obj) => obj.id !== action.payload.objectId
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.filter(
+                        (obj) => obj.id !== action.payload.objectId
+                    ).map(obj => ({ ...obj })),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editSlideBackground(
             state,
             action: PayloadAction<{ slideId: string; background: Background }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, background: { ...action.payload.background } }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    background: { ...action.payload.background },
+                    content: slide.content.map(obj => ({ ...obj }))
+                };
+            });
         },
 
         editObjectPositionCoordinates(
@@ -1537,18 +1150,24 @@ const slidesReducer = createSlice({
                 position: { x: number; y: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? { ...obj, position: { ...action.payload.position } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position } 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editObjectPositionSize(
@@ -1560,22 +1179,25 @@ const slidesReducer = createSlice({
                 size: { width: number; height: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? {
-                                        ...obj,
-                                        position: { ...action.payload.position },
-                                        size: { ...action.payload.size },
-                                    }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position },
+                            size: { ...action.payload.size }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextSize(
@@ -1586,18 +1208,28 @@ const slidesReducer = createSlice({
                 size: number;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, size: action.payload.size } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                size: action.payload.size 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editFontFamily(
@@ -1608,18 +1240,28 @@ const slidesReducer = createSlice({
                 family: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, family: action.payload.family } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                family: action.payload.family 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextColor(
@@ -1630,18 +1272,28 @@ const slidesReducer = createSlice({
                 color: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, color: action.payload.color } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                color: action.payload.color 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextDescription(
@@ -1652,24 +1304,31 @@ const slidesReducer = createSlice({
                 description: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, description: action.payload.description }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            description: action.payload.description 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         set(_, action: PayloadAction<Slide[]>) {
             return action.payload.map((slide) => ({
                 ...slide,
                 content: slide.content.map((obj) => ({ ...obj })),
+                background: { ...slide.background }
             }));
         },
     },
@@ -1692,7 +1351,6 @@ export const {
 } = slidesReducer.actions;
 
 export default slidesReducer.reducer;
-
 -адрес
 ./reducers/selectionReducer.ts
 -код
@@ -1750,7 +1408,7 @@ export default selectionReducer.reducer;
 ./store/default.ts
 -код
 import type { Editor, Background } from "./types.ts";
-
+import { v4 as uuid } from "uuid";
 
 export const TEXT_PRESETS = {
     type: "text",
@@ -1768,24 +1426,34 @@ export const TEXT_PRESETS = {
     },
 } as const;
 
-export const createDefaultPresentation = (): Editor => ({
-    past: [],
-    future: [],
-    present: {
-        meta: {
-            title: "New presentation",
-            author: "unknown",
-            presentationId: "",
-            createdAt: Date.now(),
-            editedAt: Date.now(),
+export const createDefaultPresentation = (): Editor => {
+    const newSlideId = uuid();
+    
+    return {
+        past: [],
+        future: [],
+        present: {
+            meta: {
+                title: "New presentation",
+                author: "unknown",
+                presentationId: "",
+                createdAt: Date.now(),
+                editedAt: Date.now(),
+            },
+            slides: [
+                {
+                    id: newSlideId,
+                    background: { type: "color", color: "white" },
+                    content: []
+                }
+            ],
+            selection: {
+                currentSlide: newSlideId,
+                selectedObjects: null,
+            },
         },
-        slides: [],
-        selection: {
-            currentSlide: null,
-            selectedObjects: null,
-        },
-    },
-});
+    };
+};
 
 export const IMAGE_PRESETS = {
     type: "image",
@@ -1807,6 +1475,8 @@ export const IMAGE_MIN_SIZE = 10;
 -адрес
 ./store/types.ts
 -код
+import type { AuthState } from "./reducers/authReducer";
+
 type Presentation = {
     meta: MetaData;
     slides: Slide[];
@@ -1872,6 +1542,12 @@ type Image = {
 
 type ModalType = "background-color" | "image-url" | "slides-list" | null;
 
+type RootState = {
+    editor: Editor;
+    auth: AuthState;
+};
+
+
 export type {
     Editor,
     Image,
@@ -1883,6 +1559,7 @@ export type {
     Selection,
     MetaData,
     Presentation,
+    RootState
 };
 -адрес
 ./store/reducers/presentationReducer.ts
@@ -1914,10 +1591,13 @@ const presentationReducer = createSlice({
     setPresentationId(state, action: PayloadAction<string>) { 
       return { ...state, presentationId: action.payload }; 
     },
+    updateMetaData(state) {
+      return {...state, editedAt: Date.now()}
+    }
   },
 });
 
-export const { setPresentationTitle, set, setPresentationId } = presentationReducer.actions;
+export const { setPresentationTitle, set, setPresentationId, updateMetaData } = presentationReducer.actions;
 export default presentationReducer.reducer;
 -адрес
 ./store/reducers/editorReducer.ts
@@ -1935,10 +1615,141 @@ const editorReducer = combineReducers({
 
 export default editorReducer;
 -адрес
+./store/reducers/authReducer.ts
+-код
+import { createSlice } from "@reduxjs/toolkit";
+
+type AuthState = {
+    isAuth: boolean;
+};
+
+const initialState: AuthState = {
+    isAuth: false,
+};
+
+const authSlice = createSlice({
+    name: "auth",
+    initialState,
+    reducers: {
+        loginSuccess(state) {
+            state.isAuth = true;
+        },
+        logout(state) {
+            state.isAuth = false;
+        },
+    },
+});
+
+export type { AuthState };
+export const { loginSuccess, logout } = authSlice.actions;
+export default authSlice.reducer;
+
+-адрес
+./store/reducers/undoableReducer.ts
+-код
+import type { Reducer, UnknownAction } from "redux";
+import type { Editor, Presentation } from "../types";
+
+const UNDO = "history/UNDO";
+const REDO = "history/REDO";
+const HISTORY_SIZE = 50;
+
+const undo = () => ({ type: UNDO });
+const redo = () => ({ type: REDO });
+
+function undoableReducer(reducer: Reducer<Presentation, UnknownAction>) {
+    // const initialPresentation: Presentation = {
+    //     meta: {
+    //         title: "New Presentation",
+    //         author: "",
+    //         presentationId: "",
+    //         createdAt: Date.now(),
+    //         editedAt: Date.now(),
+    //     },
+    //     slides: [
+    //         {
+    //             id: "",
+    //             background: { type: "color", color: "white" },
+    //             content: [],
+    //         },
+    //     ],
+    //     selection: {
+    //         currentSlide: null,
+    //         selectedObjects: null,
+    //     },
+    // };
+
+    const initialPresentation = reducer(undefined, { type: "@@INIT" });
+
+    const undoableInitialState: Editor = {
+        past: [],
+        present: initialPresentation,
+        future: [],
+    };
+
+    return function undoableReducer(
+        state = undoableInitialState,
+        action: UnknownAction,
+    ): Editor {
+        const { past, present, future } = state;
+
+        switch (action.type) {
+            case UNDO: {
+                if (past.length === 0) return state;
+                const previous = past[past.length - 1];
+                const newPast = past.slice(0, -1);
+                return {
+                    past: newPast,
+                    present: previous,
+                    future: [present, ...future],
+                };
+            }
+
+            case REDO: {
+                if (future.length === 0) return state;
+                const next = future[0];
+                const newFuture = future.slice(1);
+                return {
+                    past: [...past, present],
+                    present: next,
+                    future: newFuture,
+                };
+            }
+
+            default: {
+                const newPresent = reducer(present, action);
+                if (
+                    newPresent.slides === present.slides &&
+                    newPresent.meta.title === present.meta.title
+                ) {
+                    return {
+                        ...state,
+                        present: newPresent,
+                    };
+                }
+
+                const newPast = [...past, present];
+                if (newPast.length > HISTORY_SIZE) {
+                    newPast.shift();
+                }
+
+                return {
+                    past: newPast,
+                    present: newPresent,
+                    future: [],
+                };
+            }
+        }
+    };
+}
+
+export { undoableReducer, undo, redo, UNDO, REDO };
+
+-адрес
 ./store/reducers/slidesReducer.ts
 -код
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Slide, SlideObject, Background } from "../types";
+import type { Slide, SlideObject, Background, Text, Image } from "../types";
 
 const initialState: Slide[] = [];
 
@@ -1947,7 +1758,14 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
-            return [...state, action.payload];
+            return [
+                ...state,
+                {
+                    ...action.payload,
+                    content: action.payload.content.map(obj => ({ ...obj })),
+                    background: { ...action.payload.background }
+                }
+            ];
         },
 
         removeSlides(state, action: PayloadAction<string[]>) {
@@ -1965,7 +1783,11 @@ const slidesReducer = createSlice({
 
             return [
                 ...remaining.slice(0, newIndex),
-                ...dragged.map((s) => ({ ...s, content: [...s.content] })),
+                ...dragged.map((s) => ({ 
+                    ...s, 
+                    content: s.content.map(obj => ({ ...obj })),
+                    background: { ...s.background }
+                })),
                 ...remaining.slice(newIndex),
             ];
         },
@@ -1974,38 +1796,50 @@ const slidesReducer = createSlice({
             state,
             action: PayloadAction<{ slideId: string; obj: SlideObject }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, content: [...slide.content, action.payload.obj] }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    content: [...slide.content, { ...action.payload.obj }],
+                    background: { ...slide.background }
+                };
+            });
         },
 
         removeSlideObject(
             state,
             action: PayloadAction<{ slideId: string; objectId: string }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.filter(
-                              (obj) => obj.id !== action.payload.objectId
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.filter(
+                        (obj) => obj.id !== action.payload.objectId
+                    ).map(obj => ({ ...obj })),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editSlideBackground(
             state,
             action: PayloadAction<{ slideId: string; background: Background }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, background: { ...action.payload.background } }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    background: { ...action.payload.background },
+                    content: slide.content.map(obj => ({ ...obj }))
+                };
+            });
         },
 
         editObjectPositionCoordinates(
@@ -2016,18 +1850,24 @@ const slidesReducer = createSlice({
                 position: { x: number; y: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? { ...obj, position: { ...action.payload.position } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position } 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editObjectPositionSize(
@@ -2039,22 +1879,25 @@ const slidesReducer = createSlice({
                 size: { width: number; height: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? {
-                                        ...obj,
-                                        position: { ...action.payload.position },
-                                        size: { ...action.payload.size },
-                                    }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position },
+                            size: { ...action.payload.size }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextSize(
@@ -2065,18 +1908,28 @@ const slidesReducer = createSlice({
                 size: number;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, size: action.payload.size } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                size: action.payload.size 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editFontFamily(
@@ -2087,18 +1940,28 @@ const slidesReducer = createSlice({
                 family: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, family: action.payload.family } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                family: action.payload.family 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextColor(
@@ -2109,18 +1972,28 @@ const slidesReducer = createSlice({
                 color: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, color: action.payload.color } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                color: action.payload.color 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextDescription(
@@ -2131,24 +2004,31 @@ const slidesReducer = createSlice({
                 description: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, description: action.payload.description }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            description: action.payload.description 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         set(_, action: PayloadAction<Slide[]>) {
             return action.payload.map((slide) => ({
                 ...slide,
                 content: slide.content.map((obj) => ({ ...obj })),
+                background: { ...slide.background }
             }));
         },
     },
@@ -2171,7 +2051,6 @@ export const {
 } = slidesReducer.actions;
 
 export default slidesReducer.reducer;
-
 -адрес
 ./store/reducers/selectionReducer.ts
 -код
@@ -2227,20 +2106,111 @@ export default selectionReducer.reducer;
 -адрес
 ./main.tsx
 -код
-import { createRoot } from 'react-dom/client';
-import App from './App';
-import { Provider } from 'react-redux';
-import { store } from './store/store';
+import { Provider } from "react-redux";
+import { store } from "./store/store";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter, Route, Routes } from "react-router";
+import Login from "./view/Auth/Login";
+import Slideshow from "./view/Slideshow/Slideshow";
+import Presentation from "./view/Editor/Presentation";
+import Registration from "./view/Auth/Register";
+import ProtectedComponent from "./view/ProtectedComponent";
 
-const rootEl = document.getElementById('root');
-if (!rootEl) throw new Error('Root element not found');
-
-const root = createRoot(rootEl);
+const root = ReactDOM.createRoot(
+    document.getElementById("root") as HTMLElement,
+);
 root.render(
     <Provider store={store}>
-        <App />
-    </Provider>
+        <BrowserRouter>
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Registration />} />
+
+                <Route
+                    path="/editor"
+                    element={
+                        <ProtectedComponent>
+                            <Presentation />
+                        </ProtectedComponent>
+                    }
+                />
+
+                <Route path="/show" element={<Slideshow />} />
+            </Routes>
+        </BrowserRouter>
+    </Provider>,
 );
+
+-адрес
+./view/Slideshow/Slideshow.module.css
+-код
+.exit {
+    position: absolute;
+}
+-адрес
+./view/Slideshow/Slideshow.tsx
+-код
+import SlideRenderer from "../Editor/Slide/SlideRenderer.tsx";
+import { useAppSelector } from "../../store/store.ts";
+import { useEffect } from "react";
+import styles from "./Slideshow.module.css";
+
+type Props = {
+    scale?: number;
+};
+
+export default function Slideshow({ scale = 1 }: Props) {
+    const slides = useAppSelector((state) => state.editor.present.slides);
+
+    useEffect(() => {
+        console.log("Первый слайд", slides[0]);
+        console.log(slides);
+    }, []);
+
+    if (!slides[0]) return <div>Нет первого слайда</div>;
+
+    return (
+        <>
+            <SlideRenderer slide={slides[0]} scale={scale} />
+            <a href="/editor" className={styles.exit}>
+                Режим редактора
+            </a>
+        </>
+    );
+}
+
+-адрес
+./view/ProtectedComponent.tsx
+-код
+import { Navigate } from "react-router";
+// import { useAppSelector } from "../store/store";
+import type { JSX } from "react";
+import { useAppDispatch } from "../store/store";
+import { getCurrentUser } from "../store/appWrite/api";
+import { loginSuccess, logout } from "../store/reducers/authReducer";
+
+type Props = {
+    children: JSX.Element;
+};
+
+export default function ProtectedRoute({ children }: Props) {
+    // const isAuth = useAppSelector((state) => state.auth.isAuth);
+    const dispatch = useAppDispatch();
+    const checkAuth = async () => {
+        const user = getCurrentUser();
+        if (user != null) {
+            dispatch(loginSuccess());
+        } else {
+            dispatch(logout());
+        }
+    };
+    if (!checkAuth) {
+        return <Navigate to="/login" replace />;
+    }
+
+    return children;
+}
+
 -адрес
 ./view/Auth/Auth.module.css
 -код
@@ -2257,7 +2227,7 @@ root.render(
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
-body {
+.app {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -2356,12 +2326,217 @@ body {
 
 }
 -адрес
+./view/Auth/Register.tsx
+-код
+import { useState } from "react";
+import * as appWrite from "../../store/appWrite/api";
+import styles from "./Auth.module.css";
+import joinStyles from "../../../utils/joinStyle";
+import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../store/reducers/authReducer";
+
+export default function Registration() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [username, setUsername] = useState("");
+    const [mode, setMode] = useState<"register" | "registerName">("register");
+    const [error, setError] = useState("");
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    async function handleRegister() {
+        if (!email || !password || !username) {
+            setError("Заполните все поля!");
+            return;
+        }
+
+        try {
+            await appWrite.registerUser(email, password, username);
+            handleLogin();
+        } catch (err) {
+            setError("Ошибка входа, попробуйте позже");
+        }
+    }
+
+    async function handleLogin() {
+        try {
+            await appWrite.loginUser(email, password);
+            dispatch(loginSuccess());
+            navigate("/editor");
+        } catch (err) {
+            setError("Ошибка входа, попробуйте позже");
+        }
+    }
+
+    return (
+        <div className={styles.app}>
+            <div className={styles.loginForm}>
+                {mode == "register" && (
+                    <>
+                        <h2 className={styles.title}>Регистрация</h2>
+
+                        <div className={styles.loginHelp}>
+                            <span>Уже есть аккаунт?</span>
+                            <a href="#">Создать аккаунт </a>
+                        </div>
+                        <form>
+                            <input
+                                className={joinStyles([
+                                    styles.loginField,
+                                    styles.fieldGap,
+                                ])}
+                                type="email"
+                                placeholder="Email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+
+                            <input
+                                className={joinStyles([
+                                    styles.loginField,
+                                    styles.fieldSmallGap,
+                                ])}
+                                type="password"
+                                placeholder="Пароль"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                            />
+                        </form>
+                        <button
+                            className={styles.button}
+                            onClick={() => setMode("registerName")}
+                        >
+                            Далее
+                        </button>
+                    </>
+                )}
+
+                {mode === "registerName" && (
+                    <>
+                        <input
+                            className={joinStyles([
+                                styles.loginField,
+                                styles.fieldSmallGap,
+                            ])}
+                            type="text"
+                            placeholder="Имя пользователя"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                        />
+                        <button
+                            className={joinStyles([
+                                styles.button,
+                                styles.backButton,
+                            ])}
+                            onClick={() => setMode("register")}
+                        >
+                            Назад
+                        </button>
+
+                        <button
+                            className={styles.button}
+                            onClick={handleRegister}
+                        >
+                            Завершить регистрацию
+                        </button>
+                    </>
+                )}
+
+                {error != "" && <a className={styles.redError}>{error}</a>}
+
+                <div className={styles.demoHelp}>
+                    <span>{"Сейчас не нужен аккаунт?  "}</span>
+                    <a href="#">{"Ограниченная версия"}</a>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+-адрес
+./view/Auth/Login.tsx
+-код
+import { useState } from "react";
+import * as appWrite from "../../store/appWrite/api";
+import styles from "./Auth.module.css";
+import joinStyles from "../../../utils/joinStyle";
+import { useNavigate } from "react-router";
+import { useDispatch } from "react-redux";
+import { loginSuccess } from "../../store/reducers/authReducer";
+
+export default function login() {
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
+    async function handleLogin() {
+        try {
+            await appWrite.loginUser(email, password);
+            dispatch(loginSuccess());
+            navigate("/editor");
+        } catch (err) {
+            setError("Ошибка входа, попробуйте позже");
+        }
+    }
+
+    return (
+        <div className={styles.app}>
+            <div className={styles.loginForm}>
+                <>
+                    <h2 className={styles.title}>Войти</h2>
+
+                    <div className={styles.loginHelp}>
+                        <span>Не зарегистрированы?</span>
+                        <a href="#" onClick={(e) => {}}>
+                            Войти
+                        </a>
+                    </div>
+
+                    <form>
+                        <input
+                            className={joinStyles([
+                                styles.loginField,
+                                styles.fieldGap,
+                            ])}
+                            type="email"
+                            placeholder="Email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                        />
+
+                        <input
+                            className={joinStyles([
+                                styles.loginField,
+                                styles.fieldSmallGap,
+                            ])}
+                            type="password"
+                            placeholder="Пароль"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                        />
+                    </form>
+                </>
+                {error != "" && <a className={styles.redError}>{error}</a>}
+
+                <button className={styles.button} onClick={handleLogin}>
+                    Войти
+                </button>
+            </div>
+        </div>
+    );
+}
+
+-адрес
 ./view/Auth/Auth.tsx
 -код
 import { useState } from "react";
 import * as appWrite from "../../store/appWrite/api";
 import styles from "./Auth.module.css";
-import { client } from "../../store/appWrite/client";
 import joinStyles from "../../../utils/joinStyle";
 
 type AuthProps = {
@@ -2369,12 +2544,12 @@ type AuthProps = {
     onDemoMode: () => void;
 };
 
-export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
+export default function Auth() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [username, setUsername] = useState("");
     const [mode, setMode] = useState<"login" | "register" | "registerProfile">(
-        "register",
+        "login",
     );
     const [error, setError] = useState("");
 
@@ -2386,7 +2561,7 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
 
         try {
             await appWrite.registerUser(email, password, username);
-            onLoginSuccess();
+            handleLogin();
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
@@ -2395,13 +2570,14 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
     async function handleLogin() {
         try {
             await appWrite.loginUser(email, password);
-            onLoginSuccess();
+            // onLoginSuccess();
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
     }
 
     return (
+    <div className={styles.app}>
         <div className={styles.loginForm}>
             {mode !== "registerProfile" && (
                 <>
@@ -2480,9 +2656,7 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
                 </>
             )}
 
-            {error != "" && (
-                <a className={styles.redError}>{error}</a>
-            )}
+            {error != "" && <a className={styles.redError}>{error}</a>}
 
             {mode === "login" ? (
                 <button className={styles.button} onClick={handleLogin}>
@@ -2504,12 +2678,13 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
             {mode !== "login" && (
                 <div className={styles.demoHelp}>
                     <span>{"Сейчас не нужен аккаунт?  "}</span>
-                    <a href="#" onClick={onDemoMode}>
+                    <a href="#">
                         {"Ограниченная версия"}
                     </a>
                 </div>
             )}
         </div>
+    </div>
     );
 }
 
@@ -2533,12 +2708,11 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
 ./view/Editor/Infobar/Infobar.tsx
 -код
 import styles from "./Infobar.module.css";
-import { useSelector } from "react-redux";
-import type { Editor } from "../../../store/types.ts";
+import { useAppSelector } from "../../../store/store.ts";
 
 export default function Infobar() {
-    const { author, createdAt, editedAt } = useSelector(
-        (state: Editor) => state.present.meta
+    const { author, createdAt, editedAt } = useAppSelector(
+        (state) => state.editor.present.meta
     );
 
     const safeCreatedAt = new Date(createdAt);
@@ -2549,7 +2723,6 @@ export default function Infobar() {
             <span>Автор: {author || "неизвестен"}</span>
             <span>Создано: {safeCreatedAt.toLocaleString()}</span>
             <span>Изменено: {safeEditedAt.toLocaleString()}</span>
-            <span>Состояние презентации: {"Сохранена"}</span>
         </div>
     );
 }
@@ -2559,12 +2732,11 @@ export default function Infobar() {
 import styles from "./Workspace.module.css";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
 import { useCallback } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { addSlideObject } from "../../../store/reducers/slidesReducer.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 import * as React from "react";
 import { v4 as uuid } from "uuid";
-import type { Editor } from "../../../store/types.ts";
+import { useAppSelector, useAppDispatch } from "../../../store/store.ts";
 
 type Props = {
     scale?: number;
@@ -2577,9 +2749,9 @@ export default function Workspace({
     onSelectObject,
     onClearSelection,
 }: Props) {
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const selection = useSelector((state: Editor) => state.present.selection);
-    const dispatch = useDispatch();
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const selection = useAppSelector((state) => state.editor.present.selection);
+    const dispatch = useAppDispatch();
 
     const selectedObjects = selection.selectedObjects || [];
     const slide = slides.find((s) => s.id === selection.currentSlide);
@@ -3386,17 +3558,11 @@ import {
     editFontFamily,
     editTextColor,
     editTextSize,
-    set as setSlides,
 } from "../../../store/reducers/slidesReducer.ts";
-import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
-import { set as setPresentation, setPresentationId } from "../../../store/reducers/presentationReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
-import * as React from "react";
-import { undo, redo } from "../../../store/undoable.ts";
 import { useAppDispatch, useAppSelector } from "../../../store/store.ts";
-import * as appWrite from "../../../store/appWrite/api";
 
 type Tool = {
     name: string;
@@ -3428,18 +3594,20 @@ function getTextSelectionInfo(
 export default function Tools({ onToolAction }: ToolsProps) {
     const dispatch = useAppDispatch();
 
-    const { past, future, present } = useAppSelector((state: Editor) => state);
-    const canUndo = past.length > 0;
-    const canRedo = future.length > 0;
-
+    const { present } = useAppSelector((state) => state.editor);
     const slides = present.slides;
     const selection = present.selection;
     const selectedObjectIds = selection.selectedObjects || [];
 
-    const [, setFile] = useState<File | null>(null);
     const [tempFontSize, setTempFontSize] = useState<string>("");
     const [tempColor, setTempColor] = useState<string>("#000000");
-    const [documentId, setDocumentId] = useState<string>("");
+    const presentationId = useAppSelector(
+        (state) => state.editor.present.meta.presentationId,
+    );
+
+    const checkPresentationOpened = () => {
+        return presentationId != "";
+    };
 
     const handleAddText = useCallback(() => {
         const slideId = selection.currentSlide;
@@ -3507,84 +3675,7 @@ export default function Tools({ onToolAction }: ToolsProps) {
             icon: "/icons/shapes.svg",
             action: () => onToolAction?.("image-url"),
         },
-        {
-            name: "Отменить",
-            icon: "/icons/arrow-left.svg",
-            action: canUndo ? () => dispatch(undo()) : undefined,
-        },
-        {
-            name: "Повторить",
-            icon: "/icons/arrow-right.svg",
-            action: canRedo ? () => dispatch(redo()) : undefined,
-        },
-        {
-            name: "Сохранить",
-            icon: "icons/floppy-disk.svg",
-            action: async () => {
-                const user = await appWrite.getCurrentUser();
-                if (!user) {
-                    alert(
-                        "Пользователь не авторизован. Сохранение невозможно.",
-                    );
-                    return;
-                }
-                const userId = user.$id;
-
-                const existingDoc =
-                    await appWrite.getPresentationDocumentById(
-                        documentId,
-                    );
-                if (existingDoc) {
-                    console.log("Обновление");
-                    const pres = await appWrite.updatePresentationDocument(
-                        existingDoc.$id,
-                        present,
-                    );
-                    dispatch(setSlides(pres.processedData.slides));
-                } else {
-                    console.log("Создание новой презентации");
-                    const pres = await appWrite.createPresentationDocument(
-                        userId,
-                        present,
-                    );
-                    setDocumentId(pres.document.$id);
-                    dispatch(setPresentationId(pres.document.$id));
-                    dispatch(setSlides(pres.processedData.slides));
-                }
-            },
-        },
-        {
-            name: "Загрузить из облака",
-            icon: "/icons/cloud-arrow-down.svg",
-            action: () => onToolAction?.("slides-list"),
-        },
     ];
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0] ?? null;
-        if (selectedFile) {
-            setFile(selectedFile);
-            readFileAsObject(selectedFile);
-        }
-    };
-
-    const readFileAsObject = (file: File) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            if (event.target?.result) {
-                try {
-                    const parsed = JSON.parse(event.target.result as string);
-                    dispatch(setPresentation(parsed.meta));
-                    dispatch(setSlides(parsed.slides));
-                    dispatch(setSelection(parsed.selection));
-                } catch (error) {
-                    console.error("Ошибка при парсинге файла:", error);
-                    alert("Неверный формат презентации");
-                }
-            }
-        };
-        reader.readAsText(file);
-    };
 
     useEffect(() => {
         const { textObjects, allAreText } = getTextSelectionInfo(
@@ -3618,22 +3709,13 @@ export default function Tools({ onToolAction }: ToolsProps) {
                 <SquareButton
                     key={tool.name}
                     tool={tool}
-                    onClick={() => tool.action?.()}
+                    onClick={
+                        checkPresentationOpened()
+                            ? () => tool.action?.()
+                            : () => {}
+                    }
                 />
             ))}
-
-            <div>
-                <label htmlFor="file-upload" className="upload-button">
-                    Загрузить из JSON
-                </label>
-                <input
-                    id="file-upload"
-                    type="file"
-                    accept=".json"
-                    onChange={handleFileChange}
-                    style={{ display: "none" }}
-                />
-            </div>
 
             <form>
                 <select
@@ -3688,6 +3770,8 @@ export default function Tools({ onToolAction }: ToolsProps) {
                     }
                 }}
             />
+
+            <a href="/show">просмотр</a>
         </div>
     );
 }
@@ -3695,9 +3779,11 @@ export default function Tools({ onToolAction }: ToolsProps) {
 -адрес
 ./view/Editor/Editor.module.css
 -код
-body {
+.app {
     background: white;
-}
+    margin: 0;
+    padding: 0;
+    height: 97vh;}
 
 .editor {
     display: flex;
@@ -3721,13 +3807,13 @@ body {
 -код
 import { useDispatch } from "react-redux";
 import styles from "./Editor.module.css";
-import type { ModalType } from "../../store/types.ts";
+import type { Editor, ModalType } from "../../store/types.ts";
 import Header from "./Header/Header.tsx";
 import Infobar from "./Infobar/Infobar.tsx";
 import Slidebar from "./Slidebar/Slidebar.tsx";
 import Tools from "./Tools/Tools.tsx";
 import Workspace from "./Workspace/Workspace.tsx";
-import { type JSX, useCallback, useState } from "react";
+import { type JSX, useCallback, useEffect, useState } from "react";
 import Modal from "./Modal/Modal.tsx";
 import BackgroundModal from "./Modal/modals/BackgroundModal.tsx";
 import ImagePasteUrlModal from "./Modal/modals/ImagePasteUrlModal.tsx";
@@ -3737,18 +3823,13 @@ import {
     removeSelectedObject,
 } from "../../store/reducers/selectionReducer.ts";
 import * as React from "react";
-import type { AppDispatch } from "../../store/store";
-import { undo, redo } from "../../store/undoable";
+import { useAppSelector, type AppDispatch } from "../../store/store";
+import { undo, redo } from "../../store/reducers/undoableReducer.ts";
 import ChooseSlidesModal from "./Modal/modals/ChooseSlidesModal.tsx";
 
-type PresentationProps = {
-    onLogout: () => void;
-};
-
-export default function Presentation({
-    onLogout,
-}: PresentationProps): JSX.Element {
+export default function Presentation(): JSX.Element {
     const dispatch = useDispatch<AppDispatch>();
+    const slides = useAppSelector((state) => state.editor.present.slides);
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [currentModal, setCurrentModal] = useState<ModalType>(null);
@@ -3826,7 +3907,7 @@ export default function Presentation({
         [dispatch],
     );
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const isCtrlOrCmd = e.ctrlKey || e.metaKey;
             if (!isCtrlOrCmd) return;
@@ -3864,30 +3945,38 @@ export default function Presentation({
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
         };
-    }, [dispatch]);
+    }, []);
+
+    useEffect(()=>{
+        console.log(slides)
+    }, [slides])
 
     return (
-        <div className={styles.editor}>
-            <Header onClick={onLogout} />
-            <Tools onToolAction={handleToolAction} />
-
-            <div className={styles.main}>
-                <Slidebar />
-                <Workspace
-                    onSelectObject={handleSelectObject}
-                    onClearSelection={handleClearSelection}
+        <div className={styles.app}>
+            <div className={styles.editor}>
+                <Header
+                    onToolAction={handleToolAction}
                 />
+                <Tools onToolAction={handleToolAction} />
+
+                <div className={styles.main}>
+                    <Slidebar />
+                    <Workspace
+                        onSelectObject={handleSelectObject}
+                        onClearSelection={handleClearSelection}
+                    />
+                </div>
+
+                <Infobar />
+
+                <Modal
+                    isOpen={modalIsOpen}
+                    onClose={closeModal}
+                    title={getModalTitle()}
+                >
+                    {getModalContent()}
+                </Modal>
             </div>
-
-            <Infobar />
-
-            <Modal
-                isOpen={modalIsOpen}
-                onClose={closeModal}
-                title={getModalTitle()}
-            >
-                {getModalContent()}
-            </Modal>
         </div>
     );
 }
@@ -3897,27 +3986,176 @@ export default function Presentation({
 -код
 import styles from "./Header.module.css";
 import joinStyles from "../../../../utils/joinStyle.ts";
-import * as React from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { setPresentationTitle } from "../../../store/reducers/presentationReducer.ts";
-import type { Editor } from "../../../store/types.ts";
+import { useDispatch } from "react-redux";
+import {
+    setPresentationId,
+    setPresentationTitle,
+} from "../../../store/reducers/presentationReducer.ts";
+import { redo, undo } from "../../../store/reducers/undoableReducer.ts";
+import * as appWrite from "../../../store/appWrite/api";
+import { useAppSelector } from "../../../store/store.ts";
+import { set as setSlides } from "../../../store/reducers/slidesReducer.ts";
+import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
+import { set as setPresentation } from "../../../store/reducers/presentationReducer.ts";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { createDefaultPresentation } from "../../../store/default.ts";
+import { logout } from "../../../store/reducers/authReducer.ts";
+import { useNavigate } from "react-router";
 
 type HeaderProps = {
-    onClick?: () => void;
+    onToolAction?: (toolName: string) => void;
 };
 
-export default function Header({ onClick }: HeaderProps) {
-    const title = useSelector((state: Editor) => state.present.meta.title);
-    const dispatch = useDispatch();
+export default function Header({ onToolAction }: HeaderProps) {
+    const title = useAppSelector((state) => state.editor.present.meta.title);
+    const canUndo = useAppSelector((state) => state.editor.past.length > 0);
+    const canRedo = useAppSelector((state) => state.editor.future.length > 0);
 
-    const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const present = useAppSelector((state) => state.editor.present);
+    const presentationId = useAppSelector(
+        (state) => state.editor.present.meta.presentationId,
+    );
+
+    const dispatch = useDispatch();
+    const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
+    const [user, setUser] =
+        useState<Awaited<ReturnType<typeof appWrite.getCurrentUser>>>(null);
+    const fileMenuRef = useRef<HTMLDivElement>(null);
+    const fileButtonRef = useRef<HTMLButtonElement>(null);
+    const [fileName, setFileName] = useState<string>("");
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const loadUser = async () => {
+            const currentUser = await appWrite.getCurrentUser();
+            setUser(currentUser);
+        };
+        loadUser();
+    }, []);
+
+    const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
         dispatch(setPresentationTitle(event.target.value));
     };
 
-    const cloudIcons = {
-        off: "./icons/cloud-arrow-off.svg",
-        on: "./icons/cloud-arrow-on.svg",
-    }
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (
+                fileMenuRef.current &&
+                fileButtonRef.current &&
+                !fileMenuRef.current.contains(event.target as Node) &&
+                !fileButtonRef.current.contains(event.target as Node)
+            ) {
+                setIsFileMenuOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () =>
+            document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
+
+    const handleFileMenuClick = () => {
+        setIsFileMenuOpen(!isFileMenuOpen);
+    };
+
+    const handleNewPresentation = async () => {
+        console.log("Создание новой презентации");
+        const newPresentation = createDefaultPresentation();
+        newPresentation.present.meta.author = user?.name ?? "неизвестен";
+
+        dispatch(setPresentation(newPresentation.present.meta));
+        dispatch(setSlides(newPresentation.present.slides));
+        dispatch(setSelection(newPresentation.present.selection));
+
+        if (user) {
+            try {
+                const pres = await appWrite.createPresentationDocument(
+                    user.$id,
+                    present,
+                );
+                const newId = pres.document.$id;
+
+                dispatch(setPresentationId(newId));
+                setIsFileMenuOpen(false);
+                console.log("Новая презентация создана:", newId);
+            } catch (error) {
+                console.error("Ошибка при создании презентации:", error);
+            }
+        } else {
+            console.error(
+                "Пользователь не авторизован. Создание презентации невозможно",
+            );
+        }
+    };
+
+    const handleOpen = () => {
+        console.log("Открытие презентации");
+        onToolAction?.("slides-list");
+        setIsFileMenuOpen(false);
+    };
+
+    const handleSave = async () => {
+        console.log("Сохранение презентации");
+        if (presentationId) {
+            try {
+                const pres = await appWrite.updatePresentationDocument(
+                    presentationId,
+                    present,
+                );
+                dispatch(setSlides(pres.processedData.slides));
+                console.log("Обновлено:", presentationId);
+            } catch (err) {
+                console.error("Ошибка обновления:", err);
+            }
+        }
+        setIsFileMenuOpen(false);
+    };
+
+    const handleUndo = () => {
+        dispatch(undo());
+    };
+
+    const handleRedo = () => {
+        dispatch(redo());
+    };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0] ?? null;
+        if (selectedFile) {
+            setFileName(selectedFile.name);
+            readFileAsObject(selectedFile);
+            e.target.value = "";
+        }
+    };
+
+    const readFileAsObject = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                try {
+                    const parsed = JSON.parse(event.target.result as string);
+                    dispatch(setPresentation(parsed.meta));
+                    dispatch(setSlides(parsed.slides));
+                    dispatch(setSelection(parsed.selection));
+                    setIsFileMenuOpen(false);
+                } catch (error) {
+                    console.error("Ошибка при чтении файла:", error);
+                    setFileName("");
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const handleLoadPresentation = () => {
+        const fileInput = document.getElementById(
+            "file-upload",
+        ) as HTMLInputElement;
+        if (fileInput) {
+            fileInput.click();
+        }
+        setIsFileMenuOpen(false);
+    };
 
     return (
         <div className={styles.header}>
@@ -3928,11 +4166,100 @@ export default function Header({ onClick }: HeaderProps) {
                     className={joinStyles([styles.siteLogo])}
                 />
 
-                <img
-                    className={styles.icon}
-                    alt={"Автосохранение в облако"}
-                    src={cloudIcons.on}
-                />
+                <div className={styles.fileMenuContainer}>
+                    <button
+                        ref={fileButtonRef}
+                        className={styles.fileMenuButton}
+                        onClick={handleFileMenuClick}
+                        aria-expanded={isFileMenuOpen}
+                        aria-haspopup="true"
+                    >
+                        Файл
+                        <img
+                            className={joinStyles([
+                                styles.arrowIcon,
+                                isFileMenuOpen ? styles.open : "",
+                            ])}
+                            src="./icons/menu-triangle.svg"
+                            alt="открыть меню"
+                        />
+                    </button>
+
+                    {isFileMenuOpen && (
+                        <div
+                            ref={fileMenuRef}
+                            className={styles.fileMenuDropdown}
+                        >
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleNewPresentation}
+                            >
+                                Новая презентация
+                            </button>
+
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleOpen}
+                            >
+                                Открыть из облака
+                            </button>
+
+                            <button
+                                onClick={handleLoadPresentation}
+                                className={styles.menuItem}
+                            >
+                                {fileName
+                                    ? `Загружено: ${fileName}`
+                                    : "Загрузить презентацию"}
+                            </button>
+
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept=".json"
+                                onChange={handleFileChange}
+                                style={{ display: "none" }}
+                            />
+
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleSave}
+                            >
+                                Сохранить
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.undoRedoContainer}>
+                    <button
+                        className={styles.undoRedoButton}
+                        onClick={handleUndo}
+                        disabled={!canUndo}
+                        title="Отменить"
+                    >
+                        <img
+                            src="./icons/arrow-left.svg"
+                            alt="Отменить"
+                            width="16"
+                            height="16"
+                        />
+                    </button>
+
+                    <button
+                        className={styles.undoRedoButton}
+                        onClick={handleRedo}
+                        disabled={!canRedo}
+                        title="Повторить"
+                    >
+                        <img
+                            src="./icons/arrow-right.svg"
+                            alt="Повторить"
+                            width="16"
+                            height="16"
+                        />
+                    </button>
+                </div>
             </div>
 
             <div className={styles.center}>
@@ -3941,12 +4268,17 @@ export default function Header({ onClick }: HeaderProps) {
                     className={styles.title}
                     value={title}
                     onChange={handleTitleChange}
+                    placeholder="Название презентации"
                 />
             </div>
 
             <span
                 className={joinStyles([styles.logout, styles.right])}
-                onClick={onClick}
+                onClick={() => {
+                    appWrite.deleteCurrentSession();
+                    dispatch(logout());
+                    navigate("/login");
+                }}
             >
                 Выйти
             </span>
@@ -3972,7 +4304,6 @@ export default function Header({ onClick }: HeaderProps) {
 .left {
     display: flex;
     gap: 10px;
-
     align-items: center;
 }
 
@@ -3997,11 +4328,17 @@ export default function Header({ onClick }: HeaderProps) {
     transition:
         background 0.2s ease,
         border 0.2s ease;
+    font-family: Inter, sans-serif;
 }
 
 .button:hover {
     background: #f1f3f4;
     border-color: #a0a0a0;
+}
+
+.button:focus {
+    outline: none;
+    border-color: #1a73e8;
 }
 
 .title {
@@ -4038,6 +4375,114 @@ export default function Header({ onClick }: HeaderProps) {
     cursor: pointer;
 }
 
+.fileMenuContainer {
+    position: relative;
+}
+
+.fileMenuButton {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #f8f9fa;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: Inter, sans-serif;
+    color: #202124;
+}
+
+.fileMenuButton:hover {
+    outline: none;
+    border-color: #1a73e8;
+}
+
+.arrowIcon {
+    width: 12px;
+    height: 12px;
+    transition: transform 0.2s ease;
+}
+
+.arrowIcon.open {
+    transform: rotate(180deg);
+}
+
+.fileMenuDropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    background: white;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    min-width: 200px;
+    padding: 8px 0;
+    z-index: 1000;
+}
+
+.menuItem {
+    width: 100%;
+    padding: 10px 16px;
+    background: none;
+    border: none;
+    text-align: left;
+    cursor: pointer;
+    color: #202124;
+    font-size: 14px;
+    font-family: Inter, sans-serif;
+    transition: background-color 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 36px;
+}
+
+.menuItem:hover {
+    background-color: rgba(26, 115, 232, 0.04);
+}
+
+.menuItemIcon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.undoRedoContainer {
+    display: flex;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.undoRedoButton {
+    background: #f8f9fa;
+    border: 1px solid #d0d0d0;
+    border-radius: 8px;
+    padding: 6px 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.undoRedoButton:hover {
+    background: #f1f3f4;
+    border-color: #a0a0a0;
+}
+
+.undoRedoButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.undoRedoButton:disabled:hover {
+    background: #f8f9fa;
+    border-color: #d0d0d0;
+}
 -адрес
 ./view/Editor/Modal/modals/ImagePasteUrlModal.tsx
 -код
@@ -4047,8 +4492,7 @@ import { useState } from "react";
 import { addSlideObject } from "../../../../store/reducers/slidesReducer.ts";
 import { v4 as uuid } from "uuid";
 import { IMAGE_PRESETS } from "../../../../store/default.ts";
-import { useDispatch, useSelector } from "react-redux";
-import type { Editor } from "../../../../store/types.ts";
+import { useAppSelector, useAppDispatch } from "../../../../store/store.ts";
 
 type ImagePasteUrlModalProps = {
     onClose: () => void;
@@ -4057,8 +4501,8 @@ type ImagePasteUrlModalProps = {
 export default function ImagePasteUrlModal({
     onClose,
 }: ImagePasteUrlModalProps) {
-    const selection = useSelector((state: Editor) => state.present.selection);
-    const dispatch = useDispatch();
+    const selection = useAppSelector((state) => state.editor.present.selection);
+    const dispatch = useAppDispatch();
     const [imageUrl, setImageUrl] = useState<string>("");
     const handlePasteImageUrl = (url: string) => {
         const slideId = selection.currentSlide;
@@ -4129,7 +4573,7 @@ export default function ImagePasteUrlModal({
     background: white;
     border-radius: 12px;
     padding: 20px;
-    max-width: 650px;
+    max-width: 700px;
     height: auto;
 }
 
@@ -4137,6 +4581,9 @@ export default function ImagePasteUrlModal({
     display: flex;
     flex-wrap: wrap;
     gap: 16px;
+    overflow-y: auto;
+    max-height: 500px;
+    padding-right: 8px;
 }
 
 .slideCard {
@@ -4251,18 +4698,17 @@ export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
 import styles from "./IslandModal.module.css";
 import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import {editSlideBackground} from "../../../../store/reducers/slidesReducer.ts";
-import type { Editor } from "../../../../store/types.ts";
+import { editSlideBackground } from "../../../../store/reducers/slidesReducer.ts";
+import { useAppDispatch, useAppSelector } from "../../../../store/store.ts";
 
 type BackgroundModalProps = {
     onClose: () => void;
 };
 
 export default function BackgroundModal({ onClose }: BackgroundModalProps) {
-    const selection = useSelector((state: Editor) => state.present.selection);
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const dispatch = useDispatch();
+    const selection = useAppSelector((state) => state.editor.present.selection);
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const dispatch = useAppDispatch();
     const [colorBackground, setColorBackground] = useState<string>("white");
     const [urlBackground, setUrlBackground] = useState<string>("");
 
@@ -4270,8 +4716,13 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         const slideId = selection.currentSlide;
         if (!slideId) return;
 
-
-        dispatch(editSlideBackground({ slideId, background: { type: "color", color: color } }));    };
+        dispatch(
+            editSlideBackground({
+                slideId,
+                background: { type: "color", color: color },
+            }),
+        );
+    };
 
     const handleEditSlideBackgroundImage = (url: string) => {
         const slideId = selection.currentSlide;
@@ -4281,11 +4732,14 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
         if (!slide) return;
 
         dispatch(
-            editSlideBackground({slideId, background: {
-                type: "picture",
-                source: url,
-                transparency: 1,
-            }}),
+            editSlideBackground({
+                slideId,
+                background: {
+                    type: "picture",
+                    source: url,
+                    transparency: 1,
+                },
+            }),
         );
     };
 
@@ -4626,6 +5080,15 @@ export type { ResizeCorner };
     border: 1px solid blue;
 }
 
+.disabledTool {
+    border-color: #cfcfcf;
+    cursor: not-allowed;
+}
+
+.disabledTool:hover {
+    border: 1px solid #cfcfcf;
+}
+
 .icon {
     width: 18px;
     height: 18px;
@@ -4636,26 +5099,33 @@ export type { ResizeCorner };
 -код
 import styles from "./RoundButton.module.css";
 import type { Tool } from "../buttonTypes.ts";
+import joinStyles from "../../../../../../utils/joinStyle.ts";
 
 type RoundButtonProps = {
     tool: Tool;
     onClick: () => void;
-}
+    enabled: boolean;
+};
 
-export default function RoundButton({tool, onClick}: RoundButtonProps) {
+export default function RoundButton({
+    tool,
+    onClick,
+    enabled,
+}: RoundButtonProps) {
     return (
         <span
-            className={styles.tool}
-            onClick={onClick}
+            className={
+                enabled
+                    ? styles.tool
+                    : joinStyles([styles.tool, styles.disabledTool])
+            }
+            onClick={enabled ? onClick : () => {}}
         >
-            <img
-                className={styles.icon}
-                alt={tool.name}
-                src={tool.icon}
-            />
+            <img className={styles.icon} alt={tool.name} src={tool.icon} />
         </span>
-    )
+    );
 }
+
 -адрес
 ./view/Editor/Common/Button/SquareButton/SquareButton.tsx
 -код
@@ -4966,16 +5436,22 @@ import { addSlide, removeSlides } from "../../../store/reducers/slidesReducer.ts
 import { chooseSlide } from "../../../store/reducers/selectionReducer.ts";
 import { useSlideMove } from "./hooks/useSlideMove.ts";
 import { useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
-import type { Editor } from '../../../store/types.ts';
+import { useAppSelector } from "../../../store/store.ts";
 
 
 export default function Slidebar() {
-    const slides = useSelector((state: Editor) => state.present.slides);
-    const currentSlideId = useSelector((state: Editor) => state.present.selection.currentSlide);
+    const slides = useAppSelector((state) => state.editor.present.slides);
+    const currentSlideId = useAppSelector((state) => state.editor.present.selection.currentSlide);
+    const presentationId = useAppSelector(
+        (state) => state.editor.present.meta.presentationId,
+    );
 
+    const checkPresentationOpened = () => {
+        return presentationId != "";
+    };
     const dispatch = useDispatch();
 
     const [selectedSlidesIds, setSelectedSlidesIds] = useState<string[]>([]);
@@ -5073,6 +5549,7 @@ export default function Slidebar() {
                         key={tool.name}
                         tool={tool}
                         onClick={() => tool.action?.()}
+                        enabled={checkPresentationOpened()}
                     />
                 ))}
             </div>
@@ -5124,12 +5601,12 @@ body {
     font-family: Roboto, Arial, sans-serif;
     overflow: hidden;
 
-    width: 100vw;
+    /* width: 100vw; */
     height: 100vh;
 }
 
 #root {
-    width: 100vw;
+    /* width: 100vw; */
     height: 100vh;
 }
 
@@ -5146,13 +5623,7 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import PresentationComponent from "./view/Editor/Presentation";
 import Auth from "./view/Auth/Auth.tsx";
-import { Client, Account } from "appwrite";
-
-const client = new Client()
-    .setEndpoint("https://syd.cloud.appwrite.io/v1")
-    .setProject("691eb9d4000abbc15a03");
-
-const account = new Account(client);
+import * as appWrite from "./store/appWrite/api.ts";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -5164,19 +5635,19 @@ function App() {
 
     useEffect(() => {
         if (isAuthenticated || isDemoMode) {
-            document.body.classList.add('editor-mode');
-            document.body.classList.remove('auth-mode');
+            document.body.classList.add("editorMode");
+            document.body.classList.remove("authMode");
         } else {
-            document.body.classList.add('auth-mode');
-            document.body.classList.remove('editor-mode');
+            document.body.classList.add("authMode");
+            document.body.classList.remove("editorMode");
         }
     }, [isAuthenticated, isDemoMode]);
 
     const checkAuth = async () => {
-        try {
-            await account.get();
+        const user = appWrite.getCurrentUser();
+        if (user != null) {
             setIsAuthenticated(true);
-        } catch (error) {
+        } else {
             setIsAuthenticated(false);
         }
     };
@@ -5187,14 +5658,9 @@ function App() {
     };
 
     const handleLogout = async () => {
-        try {
-            await account.deleteSession("current");
-        } catch (error) {
-            console.error("Logout error:", error);
-        } finally {
-            setIsAuthenticated(false);
-            setIsDemoMode(false);
-        }
+        appWrite.deleteSession();
+        setIsAuthenticated(false);
+        setIsDemoMode(false);
     };
 
     const handleDemoMode = () => {
@@ -5203,10 +5669,16 @@ function App() {
     };
 
     if (!isAuthenticated && !isDemoMode) {
-        return <Auth onLoginSuccess={handleLoginSuccess} onDemoMode={handleDemoMode} />;
+        return (
+            <Auth
+                onLoginSuccess={handleLoginSuccess}
+                onDemoMode={handleDemoMode}
+            />
+        );
     }
 
     return <PresentationComponent onLogout={handleLogout} />;
 }
 
 export default App;
+

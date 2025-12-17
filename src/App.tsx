@@ -2,13 +2,7 @@ import { useState, useEffect } from "react";
 import "./App.css";
 import PresentationComponent from "./view/Editor/Presentation";
 import Auth from "./view/Auth/Auth.tsx";
-import { Client, Account } from "appwrite";
-
-const client = new Client()
-    .setEndpoint("https://syd.cloud.appwrite.io/v1")
-    .setProject("691eb9d4000abbc15a03");
-
-const account = new Account(client);
+import * as appWrite from "./store/appWrite/api.ts";
 
 function App() {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,19 +14,19 @@ function App() {
 
     useEffect(() => {
         if (isAuthenticated || isDemoMode) {
-            document.body.classList.add('editor-mode');
-            document.body.classList.remove('auth-mode');
+            document.body.classList.add("editorMode");
+            document.body.classList.remove("authMode");
         } else {
-            document.body.classList.add('auth-mode');
-            document.body.classList.remove('editor-mode');
+            document.body.classList.add("authMode");
+            document.body.classList.remove("editorMode");
         }
     }, [isAuthenticated, isDemoMode]);
 
     const checkAuth = async () => {
-        try {
-            await account.get();
+        const user = appWrite.getCurrentUser();
+        if (user != null) {
             setIsAuthenticated(true);
-        } catch (error) {
+        } else {
             setIsAuthenticated(false);
         }
     };
@@ -43,14 +37,9 @@ function App() {
     };
 
     const handleLogout = async () => {
-        try {
-            await account.deleteSession("current");
-        } catch (error) {
-            console.error("Logout error:", error);
-        } finally {
-            setIsAuthenticated(false);
-            setIsDemoMode(false);
-        }
+        appWrite.deleteSession();
+        setIsAuthenticated(false);
+        setIsDemoMode(false);
     };
 
     const handleDemoMode = () => {
@@ -59,7 +48,12 @@ function App() {
     };
 
     if (!isAuthenticated && !isDemoMode) {
-        return <Auth onLoginSuccess={handleLoginSuccess} onDemoMode={handleDemoMode} />;
+        return (
+            <Auth
+                onLoginSuccess={handleLoginSuccess}
+                onDemoMode={handleDemoMode}
+            />
+        );
     }
 
     return <PresentationComponent onLogout={handleLogout} />;

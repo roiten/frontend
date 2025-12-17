@@ -1,7 +1,6 @@
 import { useState } from "react";
 import * as appWrite from "../../store/appWrite/api";
 import styles from "./Auth.module.css";
-import { client } from "../../store/appWrite/client";
 import joinStyles from "../../../utils/joinStyle";
 
 type AuthProps = {
@@ -9,12 +8,12 @@ type AuthProps = {
     onDemoMode: () => void;
 };
 
-export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
+export default function Auth() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [username, setUsername] = useState("");
     const [mode, setMode] = useState<"login" | "register" | "registerProfile">(
-        "register",
+        "login",
     );
     const [error, setError] = useState("");
 
@@ -26,7 +25,7 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
 
         try {
             await appWrite.registerUser(email, password, username);
-            onLoginSuccess();
+            handleLogin();
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
@@ -35,13 +34,14 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
     async function handleLogin() {
         try {
             await appWrite.loginUser(email, password);
-            onLoginSuccess();
+            // onLoginSuccess();
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
     }
 
     return (
+    <div className={styles.app}>
         <div className={styles.loginForm}>
             {mode !== "registerProfile" && (
                 <>
@@ -120,9 +120,7 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
                 </>
             )}
 
-            {error != "" && (
-                <a className={styles.redError}>{error}</a>
-            )}
+            {error != "" && <a className={styles.redError}>{error}</a>}
 
             {mode === "login" ? (
                 <button className={styles.button} onClick={handleLogin}>
@@ -144,11 +142,12 @@ export default function Auth({ onLoginSuccess, onDemoMode }: AuthProps) {
             {mode !== "login" && (
                 <div className={styles.demoHelp}>
                     <span>{"Сейчас не нужен аккаунт?  "}</span>
-                    <a href="#" onClick={onDemoMode}>
+                    <a href="#">
                         {"Ограниченная версия"}
                     </a>
                 </div>
             )}
         </div>
+    </div>
     );
 }

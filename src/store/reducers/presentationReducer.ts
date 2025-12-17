@@ -25,8 +25,11 @@ const presentationReducer = createSlice({
     setPresentationId(state, action: PayloadAction<string>) { 
       return { ...state, presentationId: action.payload }; 
     },
+    updateMetaData(state) {
+      return {...state, editedAt: Date.now()}
+    }
   },
 });
 
-export const { setPresentationTitle, set, setPresentationId } = presentationReducer.actions;
+export const { setPresentationTitle, set, setPresentationId, updateMetaData } = presentationReducer.actions;
 export default presentationReducer.reducer;

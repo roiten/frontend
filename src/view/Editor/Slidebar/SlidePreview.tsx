@@ -45,7 +45,7 @@ export default function SlidePreview({
                     height: SLIDE_HEIGHT * scale,
                 }}
             >
-                <SlideRenderer slide={slide} scale={scale} />
+                <SlideRenderer slide={slide} scale={scale} mode="edit"/>
             </div>
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>

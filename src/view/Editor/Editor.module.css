@@ -1,6 +1,8 @@
-body {
+.app {
     background: white;
-}
+    margin: 0;
+    padding: 0;
+    height: 97vh;}
 
 .editor {
     display: flex;

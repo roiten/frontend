@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import type { Slide, SlideObject, Background } from "../types";
+import type { Slide, SlideObject, Background, Text, Image } from "../types";
 
 const initialState: Slide[] = [];
 
@@ -8,7 +8,14 @@ const slidesReducer = createSlice({
     initialState,
     reducers: {
         addSlide(state, action: PayloadAction<Slide>) {
-            return [...state, action.payload];
+            return [
+                ...state,
+                {
+                    ...action.payload,
+                    content: action.payload.content.map(obj => ({ ...obj })),
+                    background: { ...action.payload.background }
+                }
+            ];
         },
 
         removeSlides(state, action: PayloadAction<string[]>) {
@@ -26,7 +33,11 @@ const slidesReducer = createSlice({
 
             return [
                 ...remaining.slice(0, newIndex),
-                ...dragged.map((s) => ({ ...s, content: [...s.content] })),
+                ...dragged.map((s) => ({ 
+                    ...s, 
+                    content: s.content.map(obj => ({ ...obj })),
+                    background: { ...s.background }
+                })),
                 ...remaining.slice(newIndex),
             ];
         },
@@ -35,38 +46,50 @@ const slidesReducer = createSlice({
             state,
             action: PayloadAction<{ slideId: string; obj: SlideObject }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, content: [...slide.content, action.payload.obj] }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    content: [...slide.content, { ...action.payload.obj }],
+                    background: { ...slide.background }
+                };
+            });
         },
 
         removeSlideObject(
             state,
             action: PayloadAction<{ slideId: string; objectId: string }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.filter(
-                              (obj) => obj.id !== action.payload.objectId
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.filter(
+                        (obj) => obj.id !== action.payload.objectId
+                    ).map(obj => ({ ...obj })),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editSlideBackground(
             state,
             action: PayloadAction<{ slideId: string; background: Background }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? { ...slide, background: { ...action.payload.background } }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return { 
+                    ...slide, 
+                    background: { ...action.payload.background },
+                    content: slide.content.map(obj => ({ ...obj }))
+                };
+            });
         },
 
         editObjectPositionCoordinates(
@@ -77,18 +100,24 @@ const slidesReducer = createSlice({
                 position: { x: number; y: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? { ...obj, position: { ...action.payload.position } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position } 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editObjectPositionSize(
@@ -100,22 +129,25 @@ const slidesReducer = createSlice({
                 size: { width: number; height: number };
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.slideObject.id
-                                  ? {
-                                        ...obj,
-                                        position: { ...action.payload.position },
-                                        size: { ...action.payload.size },
-                                    }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.slideObject.id) {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            position: { ...action.payload.position },
+                            size: { ...action.payload.size }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextSize(
@@ -126,18 +158,28 @@ const slidesReducer = createSlice({
                 size: number;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, size: action.payload.size } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                size: action.payload.size 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editFontFamily(
@@ -148,18 +190,28 @@ const slidesReducer = createSlice({
                 family: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, family: action.payload.family } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                family: action.payload.family 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextColor(
@@ -170,18 +222,28 @@ const slidesReducer = createSlice({
                 color: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, font: { ...obj.font, color: action.payload.color } }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        const textObj = obj as Text;
+                        return { 
+                            ...textObj, 
+                            font: { 
+                                ...textObj.font, 
+                                color: action.payload.color 
+                            }
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         editTextDescription(
@@ -192,24 +254,31 @@ const slidesReducer = createSlice({
                 description: string;
             }>
         ) {
-            return state.map((slide) =>
-                slide.id === action.payload.slideId
-                    ? {
-                          ...slide,
-                          content: slide.content.map((obj) =>
-                              obj.id === action.payload.textId && obj.type === "text"
-                                  ? { ...obj, description: action.payload.description }
-                                  : obj
-                          ),
-                      }
-                    : slide
-            );
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content.map((obj) => {
+                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                            return { ...obj };
+                        }
+                        return { 
+                            ...obj, 
+                            description: action.payload.description 
+                        };
+                    }),
+                    background: { ...slide.background }
+                };
+            });
         },
 
         set(_, action: PayloadAction<Slide[]>) {
             return action.payload.map((slide) => ({
                 ...slide,
                 content: slide.content.map((obj) => ({ ...obj })),
+                background: { ...slide.background }
             }));
         },
     },

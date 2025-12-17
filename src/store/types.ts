@@ -1,3 +1,5 @@
+import type { AuthState } from "./reducers/authReducer";
+
 type Presentation = {
     meta: MetaData;
     slides: Slide[];
@@ -63,6 +65,12 @@ type Image = {
 
 type ModalType = "background-color" | "image-url" | "slides-list" | null;
 
+type RootState = {
+    editor: Editor;
+    auth: AuthState;
+};
+
+
 export type {
     Editor,
     Image,
@@ -74,4 +82,5 @@ export type {
     Selection,
     MetaData,
     Presentation,
+    RootState
 };

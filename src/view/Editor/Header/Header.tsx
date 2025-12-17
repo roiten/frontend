@@ -1,38 +1,45 @@
 import styles from "./Header.module.css";
 import joinStyles from "../../../../utils/joinStyle.ts";
-import * as React from "react";
 import { useDispatch } from "react-redux";
 import {
     setPresentationId,
     setPresentationTitle,
 } from "../../../store/reducers/presentationReducer.ts";
-import type { Editor } from "../../../store/types.ts";
-import { redo, undo } from "../../../store/reducers/undoable.ts";
+import { redo, undo } from "../../../store/reducers/undoableReducer.ts";
 import * as appWrite from "../../../store/appWrite/api";
 import { useAppSelector } from "../../../store/store.ts";
 import { set as setSlides } from "../../../store/reducers/slidesReducer.ts";
+import { set as setSelection } from "../../../store/reducers/selectionReducer.ts";
+import { set as setPresentation } from "../../../store/reducers/presentationReducer.ts";
+import { useEffect, useRef, useState, type ChangeEvent } from "react";
+import { createDefaultPresentation } from "../../../store/default.ts";
+import { logout } from "../../../store/reducers/authReducer.ts";
+import { useNavigate } from "react-router";
 
 type HeaderProps = {
-    onClick?: () => void;
     onToolAction?: (toolName: string) => void;
 };
 
-export default function Header({ onClick, onToolAction }: HeaderProps) {
-    const title = useAppSelector((state) => state.present.meta.title);
-    const canUndo = useAppSelector((state) => state.past.length > 0);
-    const canRedo = useAppSelector((state) => state.future.length > 0);
-    const present = useAppSelector((state) => state.present);
+export default function Header({ onToolAction }: HeaderProps) {
+    const title = useAppSelector((state) => state.editor.present.meta.title);
+    const canUndo = useAppSelector((state) => state.editor.past.length > 0);
+    const canRedo = useAppSelector((state) => state.editor.future.length > 0);
+
+    const present = useAppSelector((state) => state.editor.present);
     const presentationId = useAppSelector(
-        (state) => state.present.meta.presentationId,
+        (state) => state.editor.present.meta.presentationId,
     );
 
     const dispatch = useDispatch();
-    const [isFileMenuOpen, setIsFileMenuOpen] = React.useState(false);
-    const [user, setUser] = React.useState<Awaited<ReturnType<typeof appWrite.getCurrentUser>>>(null);
-    const fileMenuRef = React.useRef<HTMLDivElement>(null);
-    const fileButtonRef = React.useRef<HTMLButtonElement>(null);
+    const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
+    const [user, setUser] =
+        useState<Awaited<ReturnType<typeof appWrite.getCurrentUser>>>(null);
+    const fileMenuRef = useRef<HTMLDivElement>(null);
+    const fileButtonRef = useRef<HTMLButtonElement>(null);
+    const [fileName, setFileName] = useState<string>("");
+    const navigate = useNavigate();
 
-    React.useEffect(() => {
+    useEffect(() => {
         const loadUser = async () => {
             const currentUser = await appWrite.getCurrentUser();
             setUser(currentUser);
@@ -40,11 +47,11 @@ export default function Header({ onClick, onToolAction }: HeaderProps) {
         loadUser();
     }, []);
 
-    const handleTitleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleTitleChange = (event: ChangeEvent<HTMLInputElement>) => {
         dispatch(setPresentationTitle(event.target.value));
     };
 
-    React.useEffect(() => {
+    useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (
                 fileMenuRef.current &&
@@ -67,6 +74,13 @@ export default function Header({ onClick, onToolAction }: HeaderProps) {
 
     const handleNewPresentation = async () => {
         console.log("Создание новой презентации");
+        const newPresentation = createDefaultPresentation();
+        newPresentation.present.meta.author = user?.name ?? "неизвестен";
+
+        dispatch(setPresentation(newPresentation.present.meta));
+        dispatch(setSlides(newPresentation.present.slides));
+        dispatch(setSelection(newPresentation.present.selection));
+
         if (user) {
             try {
                 const pres = await appWrite.createPresentationDocument(
@@ -119,6 +133,44 @@ export default function Header({ onClick, onToolAction }: HeaderProps) {
         dispatch(redo());
     };
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFile = e.target.files?.[0] ?? null;
+        if (selectedFile) {
+            setFileName(selectedFile.name);
+            readFileAsObject(selectedFile);
+            e.target.value = "";
+        }
+    };
+
+    const readFileAsObject = (file: File) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (event.target?.result) {
+                try {
+                    const parsed = JSON.parse(event.target.result as string);
+                    dispatch(setPresentation(parsed.meta));
+                    dispatch(setSlides(parsed.slides));
+                    dispatch(setSelection(parsed.selection));
+                    setIsFileMenuOpen(false);
+                } catch (error) {
+                    console.error("Ошибка при чтении файла:", error);
+                    setFileName("");
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const handleLoadPresentation = () => {
+        const fileInput = document.getElementById(
+            "file-upload",
+        ) as HTMLInputElement;
+        if (fileInput) {
+            fileInput.click();
+        }
+        setIsFileMenuOpen(false);
+    };
+
     return (
         <div className={styles.header}>
             <div className={styles.left}>
@@ -137,59 +189,56 @@ export default function Header({ onClick, onToolAction }: HeaderProps) {
                         aria-haspopup="true"
                     >
                         Файл
-                        <svg 
-                            className={`${styles.arrowIcon} ${isFileMenuOpen ? styles.open : ''}`}
-                            viewBox="0 0 12 12" 
-                        >
-                            <path 
-                                d="M6 9L2 5h8L6 9z" 
-                                fill="currentColor"
-                            />
-                        </svg>
+                        <img
+                            className={joinStyles([
+                                styles.arrowIcon,
+                                isFileMenuOpen ? styles.open : "",
+                            ])}
+                            src="./icons/menu-triangle.svg"
+                            alt="открыть меню"
+                        />
                     </button>
 
                     {isFileMenuOpen && (
                         <div
                             ref={fileMenuRef}
                             className={styles.fileMenuDropdown}
-                            role="menu"
-                            aria-labelledby="file-menu-button"
                         >
                             <button
                                 className={styles.menuItem}
                                 onClick={handleNewPresentation}
-                                role="menuitem"
                             >
-                                <img 
-                                    src="./icons/file-add.svg" 
-                                    alt=""
-                                    className={styles.menuItemIcon}
-                                />
                                 Новая презентация
                             </button>
 
                             <button
                                 className={styles.menuItem}
                                 onClick={handleOpen}
-                                role="menuitem"
                             >
-                                <img 
-                                    src="./icons/folder-open.svg" 
-                                    alt=""
-                                    className={styles.menuItemIcon}
-                                />
                                 Открыть из облака
                             </button>
+
+                            <button
+                                onClick={handleLoadPresentation}
+                                className={styles.menuItem}
+                            >
+                                {fileName
+                                    ? `Загружено: ${fileName}`
+                                    : "Загрузить презентацию"}
+                            </button>
+
+                            <input
+                                id="file-upload"
+                                type="file"
+                                accept=".json"
+                                onChange={handleFileChange}
+                                style={{ display: "none" }}
+                            />
+
                             <button
                                 className={styles.menuItem}
                                 onClick={handleSave}
-                                role="menuitem"
                             >
-                                <img 
-                                    src="./icons/save.svg" 
-                                    alt=""
-                                    className={styles.menuItemIcon}
-                                />
                                 Сохранить
                             </button>
                         </div>
@@ -233,12 +282,17 @@ export default function Header({ onClick, onToolAction }: HeaderProps) {
                     className={styles.title}
                     value={title}
                     onChange={handleTitleChange}
+                    placeholder="Название презентации"
                 />
             </div>
 
             <span
                 className={joinStyles([styles.logout, styles.right])}
-                onClick={onClick}
+                onClick={() => {
+                    appWrite.deleteCurrentSession();
+                    dispatch(logout());
+                    navigate("/login");
+                }}
             >
                 Выйти
             </span>
