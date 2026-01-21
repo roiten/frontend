@@ -1,6 +1,6 @@
 import styles from "./Tools.module.css";
 import { useEffect, useState, useCallback } from "react";
-import type { Editor, Slide, SlideObject } from "../../../store/types.ts";
+import type { Slide, SlideObject } from "../../../store/types.ts";
 import SquareButton from "../Common/Button/SquareButton/SquareButton.tsx";
 import {
     addSlideObject,
@@ -8,6 +8,7 @@ import {
     editTextColor,
     editTextSize,
 } from "../../../store/reducers/slidesReducer.ts";
+import { toggleHistoryPanel } from "../../../store/reducers/uiReducer.ts";
 import { TEXT_PRESETS } from "../../../store/default.ts";
 import { v4 as uuid } from "uuid";
 import { getTextObjectById } from "../../../store/selectors.ts";
@@ -43,6 +44,9 @@ function getTextSelectionInfo(
 
 export default function Tools({ onToolAction }: ToolsProps) {
     const dispatch = useAppDispatch();
+    const showHistorySidePanel = useAppSelector(
+        (state) => state.ui.showHistoryPanel,
+    );
 
     const { present } = useAppSelector((state) => state.editor);
     const slides = present.slides;
@@ -55,6 +59,8 @@ export default function Tools({ onToolAction }: ToolsProps) {
     const presentationId = useAppSelector(
         (state) => state.editor.present.meta.presentationId,
     );
+
+    const playBtn = { name: "", icon: "/icons/play2.svg" };
 
     const checkPresentationOpened = () => {
         return presentationId != "";
@@ -125,6 +131,15 @@ export default function Tools({ onToolAction }: ToolsProps) {
             name: "URL-картинка",
             icon: "/icons/shapes.svg",
             action: () => onToolAction?.("image-url"),
+        },
+        {
+            name: "История изменений",
+            icon: "/icons/clock-counter-clockwise.svg",
+            action: () => {
+                console.log(showHistorySidePanel);
+                dispatch(toggleHistoryPanel());
+                console.log(showHistorySidePanel);
+            },
         },
     ];
 
@@ -221,10 +236,13 @@ export default function Tools({ onToolAction }: ToolsProps) {
                     }
                 }}
             />
-
-            <span onClick={()=>{
-                navigate("/show")
-            }}>просмотр</span>
+            <SquareButton
+                key="play"
+                tool={playBtn}
+                onClick={() => {
+                    navigate("/show");
+                }}
+            />
         </div>
     );
 }

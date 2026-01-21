@@ -1,0 +1,167 @@
+.sidepanel {
+    width: 30vw;
+    height: 79vh;
+    background-color: #ffffff;
+    border-right: 1px solid #e0e0e0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow-y: auto;
+    position: relative;
+    font-family: 'Roboto', 'Segoe UI', Arial, sans-serif;
+}
+
+.header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #ffffff;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.headerTitle {
+    font-size: 20px;
+    font-weight: 500;
+    color: #202124;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.3px;
+}
+
+.headerSubtitle {
+    font-size: 14px;
+    color: #5f6368;
+    margin: 0;
+    font-weight: 400;
+}
+
+.versionList {
+    padding: 8px 0;
+}
+
+.versionItem {
+    padding: 12px 24px;
+    border-bottom: 1px solid #f5f5f5;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+}
+
+.versionItem:hover {
+    background-color: #f8f9fa;
+}
+
+.versionItem.active {
+    background-color: #e8f0fe;
+    border-left: 3px solid #4fbf9f;
+}
+
+.versionIcon {
+    width: 40px;
+    height: 40px;
+    background-color: #e8f0fe;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #4fbf9f;
+    font-size: 16px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+
+.versionIcon.current {
+    background-color: #4fbf9f;
+    color: white;
+}
+
+.versionContent {
+    flex: 1;
+    min-width: 0;
+}
+
+.versionTitle {
+    font-size: 15px;
+    font-weight: 500;
+    color: #202124;
+    margin: 0 0 6px 0;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.versionTitle .currentBadge {
+    background-color: #4fbf9f;
+    color: white;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 6px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.versionDate {
+    font-size: 13px;
+    color: #5f6368;
+    margin: 0 0 4px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.versionAuthor {
+    font-size: 13px;
+    color: #80868b;
+    margin: 0;
+    font-weight: 400;
+}
+
+.versionMenu {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #5f6368;
+    opacity: 0;
+    transition: opacity 0.2s ease, background-color 0.2s ease;
+    flex-shrink: 0;
+}
+
+.versionItem:hover .versionMenu {
+    opacity: 1;
+}
+
+.versionMenu:hover {
+    background-color: #f1f3f4;
+    color: #202124;
+}
+
+.emptyState {
+    padding: 48px 24px;
+    text-align: center;
+    color: #5f6368;
+}
+
+.emptyStateIcon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    color: #dadce0;
+}
+
+.emptyStateTitle {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0 0 8px 0;
+}
+
+.emptyStateSubtitle {
+    font-size: 14px;
+    margin: 0;
+}

@@ -28,9 +28,9 @@ export default function SlidePreview({
     return (
         <div
             className={joinStyles([
-                isSelected
-                    ? joinStyles([styles.thumbnail, styles.thumbnailSelected])
-                    : styles.thumbnail,
+                styles.thumbnail,
+                isSelected && styles.thumbnailSelected,
+                slide.hidden && styles.thumbnailHidden,
             ])}
             onClick={onClick}
             onMouseDown={(e) => {
@@ -45,7 +45,7 @@ export default function SlidePreview({
                     height: SLIDE_HEIGHT * scale,
                 }}
             >
-                <SlideRenderer slide={slide} scale={scale} mode="edit"/>
+                <SlideRenderer slide={slide} scale={scale} mode="edit" />
             </div>
             <span className={styles.thumbnailLabel}>Слайд {index + 1}</span>
         </div>

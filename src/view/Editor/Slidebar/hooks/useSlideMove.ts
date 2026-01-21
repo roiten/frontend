@@ -51,7 +51,7 @@ export function useSlideMove(
         setDropIndex(null);
         lastHoverIndex.current = null;
         setIsDragging(false);
-    }, [draggedSlidesIds, dropIndex, setIsDragging]);
+    }, [draggedSlidesIds, dropIndex]);
 
     useEffect(() => {
         if (draggedSlidesIds.length === 0) return;
@@ -59,7 +59,7 @@ export function useSlideMove(
         const onMouseUp = () => handleDrop();
         window.addEventListener("mouseup", onMouseUp);
         return () => window.removeEventListener("mouseup", onMouseUp);
-    }, [draggedSlidesIds, handleDrop]);
+    }, [draggedSlidesIds]);
 
     return {
         dropIndex,

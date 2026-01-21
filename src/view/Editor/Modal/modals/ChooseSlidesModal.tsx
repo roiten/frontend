@@ -6,6 +6,8 @@ import { set as setSlides } from "../../../../store/reducers/slidesReducer.ts";
 import { set as setSelection } from "../../../../store/reducers/selectionReducer.ts";
 import { set as setPresentation } from "../../../../store/reducers/presentationReducer.ts";
 import SlideRenderer from "../../Slide/SlideRenderer.tsx";
+import { validatePresentation } from "../../../../store/validateSlides.ts";
+import { error } from "ajv/dist/vocabularies/applicator/dependencies";
 
 type ChooseSlidesModalProps = {
     onClose: () => void;
@@ -14,6 +16,7 @@ type ChooseSlidesModalProps = {
 export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
     const dispatch = useAppDispatch();
     const [userDocs, setUserDocs] = useState<any[]>([]);
+    let status: boolean;
 
     useEffect(() => {
         const fetchUserDocs = async () => {
@@ -23,7 +26,9 @@ export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
                 return;
             }
 
-            const docs = await appWrite.getPresentationDocumentsByUserId(user.$id);
+            const docs = await appWrite.getPresentationDocumentsByUserId(
+                user.$id,
+            );
             setUserDocs(docs || []);
         };
 
@@ -36,12 +41,21 @@ export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
 
         try {
             const parsed = JSON.parse(doc.content);
-            dispatch(setPresentation(parsed.meta));
-            dispatch(setSlides(parsed.slides));
-            dispatch(setSelection(parsed.selection));
-            onClose();
-        } catch {
-            alert("Ошибка при загрузке презентации");
+            status = validatePresentation(parsed);
+            if (status) {
+                console.log("Validate: OK");
+                dispatch(setPresentation(parsed.meta));
+                dispatch(setSlides(parsed.slides));
+                dispatch(setSelection(parsed.selection));
+                onClose();
+            } else {
+                alert("Презентация не может быть загружена. Данные повреждены");
+                console.error(
+                    "Ошибка при сверке обязательных полей презентации",
+                );
+            }
+        } catch(e) {
+            console.error("Ошибка при загрузке презентации", e);
         }
     };
 
@@ -60,13 +74,25 @@ export default function ChooseSlidesModal({ onClose }: ChooseSlidesModalProps) {
                         const firstSlide = parsedContent.slides?.[0];
 
                         return (
-                            <div key={doc.$id} className={styles.slideCard} onClick={() => handleChooseSlide(doc.$id)}>
-                                {firstSlide && (
+                            <div
+                                key={doc.$id}
+                                className={styles.slideCard}
+                                onClick={() => handleChooseSlide(doc.$id)}
+                            >
+                                {firstSlide ? (
                                     <div className={styles.slidePreview}>
-                                        <SlideRenderer slide={firstSlide} scale={0.125} mode={"edit"}/>
+                                        <SlideRenderer
+                                            slide={firstSlide}
+                                            scale={0.125}
+                                            mode={"edit"}
+                                        />
                                     </div>
+                                ) : (
+                                    <div className={styles.blankSlide}></div>
                                 )}
-                                <div className={styles.slideTitle}>{doc.title}</div>
+                                <div className={styles.slideTitle}>
+                                    {doc.title}
+                                </div>
                             </div>
                         );
                     })}

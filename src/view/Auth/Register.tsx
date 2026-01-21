@@ -3,8 +3,6 @@ import * as appWrite from "../../store/appWrite/api";
 import styles from "./Auth.module.css";
 import joinStyles from "../../../utils/joinStyle";
 import { useNavigate } from "react-router";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../store/reducers/authReducer";
 
 export default function Registration() {
     const [email, setEmail] = useState("");
@@ -12,8 +10,6 @@ export default function Registration() {
     const [username, setUsername] = useState("");
     const [mode, setMode] = useState<"register" | "registerName">("register");
     const [error, setError] = useState("");
-
-    const dispatch = useDispatch();
     const navigate = useNavigate();
 
     async function handleRegister() {
@@ -24,17 +20,7 @@ export default function Registration() {
 
         try {
             await appWrite.registerUser(email, password, username);
-            handleLogin();
-        } catch (err) {
-            setError("Ошибка входа, попробуйте позже");
-        }
-    }
-
-    async function handleLogin() {
-        try {
-            await appWrite.loginUser(email, password);
-            dispatch(loginSuccess());
-            navigate("/editor");
+            navigate("/editor", { replace: true });
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
@@ -49,7 +35,7 @@ export default function Registration() {
 
                         <div className={styles.loginHelp}>
                             <span>Уже есть аккаунт?</span>
-                            <a href="#">Создать аккаунт </a>
+                            <a href="/login">Войти </a>
                         </div>
                         <form>
                             <input

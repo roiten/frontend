@@ -1,5 +1,6 @@
 import styles from "./SquareButton.module.css";
 import type { Tool } from "../buttonTypes.ts";
+import joinStyles from "../../../../../../utils/joinStyle.ts";
 
 type RoundButtonProps = {
     tool: Tool;
@@ -9,7 +10,7 @@ type RoundButtonProps = {
 export default function SquareButton({tool, onClick}: RoundButtonProps) {
     return (
         <span
-            className={styles.tool}
+            className={tool.name == "" ? styles.tool : joinStyles([styles.tool, styles.toolGap])}
             onClick={onClick}
         >
             {tool?.icon && (
@@ -19,7 +20,7 @@ export default function SquareButton({tool, onClick}: RoundButtonProps) {
                     src={tool.icon}
                 />
             )}
-            <span className={styles.toolName}>{tool.name}</span>
+            <span className={styles.toolName}>{tool.name != "" && tool.name}</span>
         </span>
     )
 }

@@ -1,10 +1,14 @@
 import styles from "./Workspace.module.css";
 import SlideRenderer from "../Slide/SlideRenderer.tsx";
-import { useCallback } from "react";
-import { addSlideObject } from "../../../store/reducers/slidesReducer.ts";
+import { useCallback, useEffect } from "react";
+import {
+    addNote,
+    addSlideObject,
+} from "../../../store/reducers/slidesReducer.ts";
 import { IMAGE_PRESETS } from "../../../store/default.ts";
 import * as React from "react";
 import { v4 as uuid } from "uuid";
+import * as appWrite from "../../../store/appWrite/api.ts";
 import { useAppSelector, useAppDispatch } from "../../../store/store.ts";
 
 type Props = {
@@ -24,6 +28,7 @@ export default function Workspace({
 
     const selectedObjects = selection.selectedObjects || [];
     const slide = slides.find((s) => s.id === selection.currentSlide);
+    const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
     const handleSelectObject = (objectId: string) => {
         const isCurrentlySelected =
@@ -37,28 +42,52 @@ export default function Workspace({
         }
     };
 
+    useEffect(() => {
+        if (slide) {
+            if (textareaRef.current) {
+                textareaRef.current.value = slide.note || "";
+            }
+        }
+    }, [selection.currentSlide]);
+
+    const handleNoteTyped = () => {
+        if (textareaRef.current) {
+            if (selection.currentSlide) {
+                const value = textareaRef.current.value;
+
+                dispatch(
+                    addNote({
+                        slideId: selection.currentSlide,
+                        note: value,
+                    }),
+                );
+            }
+        }
+    };
     const handlePaste = useCallback(
         async (e: React.ClipboardEvent) => {
             const items = e.clipboardData.items;
+
             for (let i = 0; i < items.length; i++) {
                 const item = items[i];
+
                 if (item.type.startsWith("image/")) {
                     const file = item.getAsFile();
                     if (file) {
                         const reader = new FileReader();
-                        reader.onload = () => {
-                            const dataUrl = reader.result as string;
-                            addImageFromUrl(dataUrl);
-                            console.log(dataUrl)
-                        };
                         reader.readAsDataURL(file);
-                        e.preventDefault();
-                        break;
+
+                        reader.onload = async () => {
+                            const data = reader.result as string;
+                            const serverUrl = await appWrite.sendMedia(data);
+                            addImageFromUrl(serverUrl);
+                            console.log("Image pasted:", serverUrl);
+                        };
                     }
                 }
             }
         },
-        [selection.currentSlide, dispatch],
+        [selection.currentSlide],
     );
 
     const addImageFromUrl = useCallback(
@@ -86,12 +115,15 @@ export default function Workspace({
                 if (!slideId) return;
 
                 dispatch(
-                    addSlideObject({slideId, obj: {
-                        ...IMAGE_PRESETS,
-                        id: uuid(),
-                        source: url,
-                        size: { width, height },
-                    }}),
+                    addSlideObject({
+                        slideId,
+                        obj: {
+                            ...IMAGE_PRESETS,
+                            id: uuid(),
+                            source: url,
+                            size: { width, height },
+                        },
+                    }),
                 );
             };
             img.src = url;
@@ -113,6 +145,15 @@ export default function Workspace({
                     onSelectObject: handleSelectObject,
                     onDeselectObject: handleWorkspaceClick,
                 }}
+            />
+            <textarea
+                ref={textareaRef}
+                className={styles.note}
+                id="slideNote"
+                name="slideNote"
+                placeholder="Введите комментарий к слайду"
+                rows={3}
+                onBlur={handleNoteTyped}
             />
         </div>
     );

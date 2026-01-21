@@ -9,27 +9,6 @@ const undo = () => ({ type: UNDO });
 const redo = () => ({ type: REDO });
 
 function undoableReducer(reducer: Reducer<Presentation, UnknownAction>) {
-    // const initialPresentation: Presentation = {
-    //     meta: {
-    //         title: "New Presentation",
-    //         author: "",
-    //         presentationId: "",
-    //         createdAt: Date.now(),
-    //         editedAt: Date.now(),
-    //     },
-    //     slides: [
-    //         {
-    //             id: "",
-    //             background: { type: "color", color: "white" },
-    //             content: [],
-    //         },
-    //     ],
-    //     selection: {
-    //         currentSlide: null,
-    //         selectedObjects: null,
-    //     },
-    // };
-
     const initialPresentation = reducer(undefined, { type: "@@INIT" });
 
     const undoableInitialState: Editor = {

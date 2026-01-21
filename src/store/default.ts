@@ -35,7 +35,8 @@ export const createDefaultPresentation = (): Editor => {
                 {
                     id: newSlideId,
                     background: { type: "color", color: "white" },
-                    content: []
+                    content: [],
+                    hidden: false,
                 }
             ],
             selection: {

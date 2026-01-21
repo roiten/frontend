@@ -107,6 +107,7 @@ export default function SlideImageObject({
             <img
                 className={styles.picture}
                 draggable={!!onClick}
+                crossOrigin="anonymous"
                 contentEditable={false}
                 src={obj.source}
                 alt="Картинка на слайде"

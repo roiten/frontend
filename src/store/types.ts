@@ -1,5 +1,3 @@
-import type { AuthState } from "./reducers/authReducer";
-
 type Presentation = {
     meta: MetaData;
     slides: Slide[];
@@ -29,6 +27,8 @@ type Slide = {
     id: string;
     background: Background;
     content: SlideObject[];
+    hidden?: boolean;
+    note?: string;
 };
 
 type Background = Color | Picture;
@@ -67,7 +67,6 @@ type ModalType = "background-color" | "image-url" | "slides-list" | null;
 
 type RootState = {
     editor: Editor;
-    auth: AuthState;
 };
 
 

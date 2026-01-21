@@ -1,5 +1,5 @@
 import { Client } from "appwrite";
 
 export const client = new Client()
-  .setEndpoint("https://syd.cloud.appwrite.io/v1")
-  .setProject("691eb9d4000abbc15a03");
+    .setEndpoint("http://localhost:8081/v1")
+    .setProject("69519ee000143f046f94");

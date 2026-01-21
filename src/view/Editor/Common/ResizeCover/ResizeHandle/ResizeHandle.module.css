@@ -36,23 +36,27 @@
 .resizeHandleTop {
     top: -8px;
     left: 50%;
+    transform: translateX(-50%);
     cursor: ns-resize;
 }
 
 .resizeHandleRight {
     top: 50%;
     right: -8px;
+    transform: translateY(-50%); 
     cursor: ew-resize;
 }
 
 .resizeHandleLeft {
     top: 50%;
     left: -8px;
+    transform: translateY(-50%);
     cursor: ew-resize;
 }
 
 .resizeHandleBottom {
     bottom: -8px;
     left: 50%;
+    transform: translateX(-50%);
     cursor: ns-resize;
 }

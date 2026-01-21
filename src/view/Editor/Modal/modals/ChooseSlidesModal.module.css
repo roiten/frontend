@@ -23,6 +23,11 @@
     align-items: center;
 }
 
+.blankSlide {
+    width: 150px;
+    height: 100px;
+}
+
 .slidePreview {
     width: 100%;
     height: 100px;

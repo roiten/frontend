@@ -153,8 +153,6 @@ export function useDnd(args: DndArgs): DndResult {
         dragState.isDragging,
         dragState.mode,
         dragState.offset,
-        onFinishMove,
-        onFinishResize,
     ]);
 
     useEffect(() => {

@@ -13,8 +13,10 @@ import { set as setSelection } from "../../../store/reducers/selectionReducer.ts
 import { set as setPresentation } from "../../../store/reducers/presentationReducer.ts";
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { createDefaultPresentation } from "../../../store/default.ts";
-import { logout } from "../../../store/reducers/authReducer.ts";
+import { exportSlidesToPDF } from "../../Slideshow/PresentationPrint.tsx";
+import { validatePresentation } from "../../../store/validateSlides.ts";
 import { useNavigate } from "react-router";
+import { WindowMessage } from "../../../store/windowMessageTypes.ts";
 
 type HeaderProps = {
     onToolAction?: (toolName: string) => void;
@@ -29,15 +31,20 @@ export default function Header({ onToolAction }: HeaderProps) {
     const presentationId = useAppSelector(
         (state) => state.editor.present.meta.presentationId,
     );
+    const slides = present.slides;
 
     const dispatch = useDispatch();
+    const navigate = useNavigate();
+
     const [isFileMenuOpen, setIsFileMenuOpen] = useState(false);
+    const [isDemonstrationMenuOpen, setIsDemonstrationMenuOpen] =
+        useState(false);
+
     const [user, setUser] =
         useState<Awaited<ReturnType<typeof appWrite.getCurrentUser>>>(null);
     const fileMenuRef = useRef<HTMLDivElement>(null);
     const fileButtonRef = useRef<HTMLButtonElement>(null);
     const [fileName, setFileName] = useState<string>("");
-    const navigate = useNavigate();
 
     useEffect(() => {
         const loadUser = async () => {
@@ -60,6 +67,7 @@ export default function Header({ onToolAction }: HeaderProps) {
                 !fileButtonRef.current.contains(event.target as Node)
             ) {
                 setIsFileMenuOpen(false);
+                setIsDemonstrationMenuOpen(false);
             }
         };
 
@@ -70,6 +78,10 @@ export default function Header({ onToolAction }: HeaderProps) {
 
     const handleFileMenuClick = () => {
         setIsFileMenuOpen(!isFileMenuOpen);
+    };
+
+    const handleDemonstrationMenuClick = () => {
+        setIsDemonstrationMenuOpen(!isDemonstrationMenuOpen);
     };
 
     const handleNewPresentation = async () => {
@@ -87,7 +99,7 @@ export default function Header({ onToolAction }: HeaderProps) {
                     user.$id,
                     present,
                 );
-                const newId = pres.document.$id;
+                const newId = pres.row.$id;
 
                 dispatch(setPresentationId(newId));
                 setIsFileMenuOpen(false);
@@ -112,11 +124,28 @@ export default function Header({ onToolAction }: HeaderProps) {
         console.log("Сохранение презентации");
         if (presentationId) {
             try {
-                const pres = await appWrite.updatePresentationDocument(
-                    presentationId,
-                    present,
-                );
-                dispatch(setSlides(pres.processedData.slides));
+                let ok = validatePresentation(present);
+                if (ok) {
+                    await appWrite.updatePresentationDocument(
+                        presentationId,
+                        present,
+                    );
+                    if (user) {
+                        await appWrite.createPresentationVersion(
+                            presentationId,
+                            { meta: present.meta, slides: present.slides },
+                            user.$id,
+                            present.meta.title,
+                        );
+                    } else {
+                        console.error(
+                            "Пользователь не авторизован. Невозможно создать версию презентации.",
+                        );
+                    }
+                } else {
+                    console.error("Ошибка обязательных полей");
+                }
+
                 console.log("Обновлено:", presentationId);
             } catch (err) {
                 console.error("Ошибка обновления:", err);
@@ -171,11 +200,53 @@ export default function Header({ onToolAction }: HeaderProps) {
         setIsFileMenuOpen(false);
     };
 
+    function handleDemonstrationModeClick() {
+        const speakerWindow = window.open(
+            "/speaker-view",
+            "SpeakerNotes",
+            "width=800,height=600",
+        );
+
+        if (!speakerWindow) {
+            console.error("Окно докладчика заблокировано браузером");
+            return;
+        }
+
+        const currentOrigin = window.location.origin;
+
+        const bridge = (event: MessageEvent) => {
+            if (event.origin !== currentOrigin) return;
+
+            if (event.data.type === WindowMessage.SPEAKER_READY) {
+                speakerWindow.postMessage(
+                    {
+                        type: WindowMessage.INITIAL_DATA,
+                        slides: slides,
+                    },
+                    currentOrigin,
+                );
+                window.removeEventListener("message", bridge);
+            }
+        };
+
+        window.addEventListener("message", bridge);
+
+        navigate("/speaker-show");
+    }
+
+    function handleExport() {
+        try {
+            exportSlidesToPDF(present.slides, title);
+        } catch (error) {
+            console.error("Ошибка при экспорте:", error);
+        }
+    }
+
     return (
         <div className={styles.header}>
             <div className={styles.left}>
                 <img
-                    src={"./icons/siteIcon.png"}
+                    src={"/icons/siteIcon.png"}
                     alt={"логотип слайдмейкера"}
                     className={joinStyles([styles.siteLogo])}
                 />
@@ -185,8 +256,6 @@ export default function Header({ onToolAction }: HeaderProps) {
                         ref={fileButtonRef}
                         className={styles.fileMenuButton}
                         onClick={handleFileMenuClick}
-                        aria-expanded={isFileMenuOpen}
-                        aria-haspopup="true"
                     >
                         Файл
                         <img
@@ -194,7 +263,7 @@ export default function Header({ onToolAction }: HeaderProps) {
                                 styles.arrowIcon,
                                 isFileMenuOpen ? styles.open : "",
                             ])}
-                            src="./icons/menu-triangle.svg"
+                            src="/icons/menu-triangle.svg"
                             alt="открыть меню"
                         />
                     </button>
@@ -241,6 +310,53 @@ export default function Header({ onToolAction }: HeaderProps) {
                             >
                                 Сохранить
                             </button>
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleExport}
+                            >
+                                Экспортировать
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                <div className={styles.fileMenuContainer}>
+                    <button
+                        ref={fileButtonRef}
+                        className={styles.fileMenuButton}
+                        onClick={handleDemonstrationMenuClick}
+                    >
+                        Демонстация
+                        <img
+                            className={joinStyles([
+                                styles.arrowIcon,
+                                isDemonstrationMenuOpen ? styles.open : "",
+                            ])}
+                            src="/icons/menu-triangle.svg"
+                            alt="открыть меню демонстрации"
+                        />
+                    </button>
+
+                    {isDemonstrationMenuOpen && (
+                        <div
+                            ref={fileMenuRef}
+                            className={styles.fileMenuDropdown}
+                        >
+                            <button
+                                className={styles.menuItem}
+                                onClick={handleDemonstrationModeClick}
+                            >
+                                Режим докладчика
+                            </button>
+
+                            <button
+                                className={styles.menuItem}
+                                onClick={() => {
+                                    navigate("/show");
+                                }}
+                            >
+                                Показ презентации
+                            </button>
                         </div>
                     )}
                 </div>
@@ -253,7 +369,7 @@ export default function Header({ onToolAction }: HeaderProps) {
                         title="Отменить"
                     >
                         <img
-                            src="./icons/arrow-left.svg"
+                            src="/icons/arrow-left.svg"
                             alt="Отменить"
                             width="16"
                             height="16"
@@ -267,7 +383,7 @@ export default function Header({ onToolAction }: HeaderProps) {
                         title="Повторить"
                     >
                         <img
-                            src="./icons/arrow-right.svg"
+                            src="/icons/arrow-right.svg"
                             alt="Повторить"
                             width="16"
                             height="16"
@@ -288,10 +404,9 @@ export default function Header({ onToolAction }: HeaderProps) {
 
             <span
                 className={joinStyles([styles.logout, styles.right])}
-                onClick={() => {
-                    appWrite.deleteCurrentSession();
-                    dispatch(logout());
-                    navigate("/login");
+                onClick={async () => {
+                    await appWrite.deleteCurrentSession();
+                    navigate("/login", { replace: true });
                 }}
             >
                 Выйти

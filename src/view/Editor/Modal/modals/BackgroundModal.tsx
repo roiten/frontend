@@ -3,6 +3,7 @@ import SquareButton from "../../Common/Button/SquareButton/SquareButton.tsx";
 import { useState } from "react";
 import { editSlideBackground } from "../../../../store/reducers/slidesReducer.ts";
 import { useAppDispatch, useAppSelector } from "../../../../store/store.ts";
+import { loadAlienURL } from "../../../../store/appWrite/api.ts";
 
 type BackgroundModalProps = {
     onClose: () => void;
@@ -26,8 +27,11 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
             }),
         );
     };
+const handleEditSlideBackgroundImage = async (url: string) => {
+    try {
+        const storageURL = await loadAlienURL(url);
+        if (!storageURL) return;
 
-    const handleEditSlideBackgroundImage = (url: string) => {
         const slideId = selection.currentSlide;
         if (!slideId) return;
 
@@ -39,12 +43,15 @@ export default function BackgroundModal({ onClose }: BackgroundModalProps) {
                 slideId,
                 background: {
                     type: "picture",
-                    source: url,
+                    source: storageURL,
                     transparency: 1,
                 },
             }),
         );
-    };
+    } catch (error) {
+        console.error("Ошибка обновления фона:", error);
+    }
+};
 
     function reset() {
         setColorBackground("white");

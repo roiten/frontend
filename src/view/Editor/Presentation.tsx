@@ -1,12 +1,12 @@
 import { useDispatch } from "react-redux";
 import styles from "./Editor.module.css";
-import type { Editor, ModalType } from "../../store/types.ts";
+import type { ModalType } from "../../store/types.ts";
 import Header from "./Header/Header.tsx";
 import Infobar from "./Infobar/Infobar.tsx";
 import Slidebar from "./Slidebar/Slidebar.tsx";
 import Tools from "./Tools/Tools.tsx";
 import Workspace from "./Workspace/Workspace.tsx";
-import { type JSX, useCallback, useEffect, useState } from "react";
+import { type JSX, useCallback, useState } from "react";
 import Modal from "./Modal/Modal.tsx";
 import BackgroundModal from "./Modal/modals/BackgroundModal.tsx";
 import ImagePasteUrlModal from "./Modal/modals/ImagePasteUrlModal.tsx";
@@ -17,12 +17,13 @@ import {
 } from "../../store/reducers/selectionReducer.ts";
 import * as React from "react";
 import { useAppSelector, type AppDispatch } from "../../store/store";
-import { undo, redo } from "../../store/reducers/undoableReducer.ts";
 import ChooseSlidesModal from "./Modal/modals/ChooseSlidesModal.tsx";
+import { useUndoRedoHotkeys } from "./Common/Hooks/useHotkeys.ts";
+import HistorySidePanel from "./HistorySidePanel/HistorySidePanel.tsx";
 
 export default function Presentation(): JSX.Element {
     const dispatch = useDispatch<AppDispatch>();
-    const slides = useAppSelector((state) => state.editor.present.slides);
+    const showHistorySidePanel = useAppSelector((state) => state.ui.showHistoryPanel);
 
     const [modalIsOpen, setModalIsOpen] = useState(false);
     const [currentModal, setCurrentModal] = useState<ModalType>(null);
@@ -87,7 +88,7 @@ export default function Presentation(): JSX.Element {
                 dispatch(removeSelectedObject(objectId));
             }
         },
-        [dispatch],
+        [],
     );
 
     const handleClearSelection = useCallback(
@@ -97,59 +98,15 @@ export default function Presentation(): JSX.Element {
                 dispatch(clearSelectedObjects());
             }
         },
-        [dispatch],
+        [],
     );
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const isCtrlOrCmd = e.ctrlKey || e.metaKey;
-            if (!isCtrlOrCmd) return;
-            switch (e.key.toLowerCase()) {
-                case "z":
-                    e.preventDefault();
-                    if (e.shiftKey) {
-                        dispatch(redo());
-                    } else {
-                        dispatch(undo());
-                    }
-                    break;
-                case "y":
-                    e.preventDefault();
-                    dispatch(redo());
-                    break;
-                case "я":
-                    if (!e.shiftKey) {
-                        e.preventDefault();
-                        dispatch(undo());
-                    }
-                    break;
-                case "н":
-                    if (e.shiftKey) {
-                        e.preventDefault();
-                        dispatch(redo());
-                    }
-                    break;
-                default:
-                    return;
-            }
-        };
-
-        document.addEventListener("keydown", handleKeyDown);
-        return () => {
-            document.removeEventListener("keydown", handleKeyDown);
-        };
-    }, []);
-
-    useEffect(()=>{
-        console.log(slides)
-    }, [slides])
+    useUndoRedoHotkeys();
 
     return (
         <div className={styles.app}>
             <div className={styles.editor}>
-                <Header
-                    onToolAction={handleToolAction}
-                />
+                <Header onToolAction={handleToolAction} />
                 <Tools onToolAction={handleToolAction} />
 
                 <div className={styles.main}>
@@ -158,8 +115,8 @@ export default function Presentation(): JSX.Element {
                         onSelectObject={handleSelectObject}
                         onClearSelection={handleClearSelection}
                     />
+                    {showHistorySidePanel && <HistorySidePanel />}
                 </div>
-
                 <Infobar />
 
                 <Modal

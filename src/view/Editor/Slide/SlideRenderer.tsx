@@ -25,6 +25,11 @@ export default function SlideRenderer({
         return !!selectionProps?.selectedObjectIds?.includes(id);
     };
 
+
+    const isEditModeChoosen = () => {
+        return mode === "edit"
+    }
+
     const backgroundStyle =
         slide.background.type === "color"
             ? { backgroundColor: slide.background.color }
@@ -55,6 +60,7 @@ export default function SlideRenderer({
                                 obj={obj}
                                 slideId={slide.id}
                                 isSelected={isSelected(obj.id)}
+                                isEditModeChoosen={isEditModeChoosen()}
                                 onClick={
                                     selectionProps
                                         ? () =>

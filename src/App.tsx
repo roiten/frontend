@@ -1,62 +1,28 @@
-import { useState, useEffect } from "react";
-import "./App.css";
-import PresentationComponent from "./view/Editor/Presentation";
-import Auth from "./view/Auth/Auth.tsx";
-import * as appWrite from "./store/appWrite/api.ts";
+import { Navigate, Route, Routes } from "react-router";
+import Login from "./view/Auth/Login";
+import Registration from "./view/Auth/Register";
+import Presentation from "./view/Editor/Presentation";
+import Slideshow from "./view/Slideshow/Slideshow";
+import NotFoundError from "./view/Error/NotFoundError";
+import { useRedirect } from "./hooks/useRedirect";
+import SpeakerView from "./view/Slideshow/SpeakerView";
 
-function App() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isDemoMode, setIsDemoMode] = useState(false);
+export default function App() {
+    useRedirect();
 
-    useEffect(() => {
-        checkAuth();
-    }, []);
-
-    useEffect(() => {
-        if (isAuthenticated || isDemoMode) {
-            document.body.classList.add("editorMode");
-            document.body.classList.remove("authMode");
-        } else {
-            document.body.classList.add("authMode");
-            document.body.classList.remove("editorMode");
-        }
-    }, [isAuthenticated, isDemoMode]);
-
-    const checkAuth = async () => {
-        const user = appWrite.getCurrentUser();
-        if (user != null) {
-            setIsAuthenticated(true);
-        } else {
-            setIsAuthenticated(false);
-        }
-    };
-
-    const handleLoginSuccess = () => {
-        setIsAuthenticated(true);
-        setIsDemoMode(false);
-    };
-
-    const handleLogout = async () => {
-        appWrite.deleteSession();
-        setIsAuthenticated(false);
-        setIsDemoMode(false);
-    };
-
-    const handleDemoMode = () => {
-        setIsAuthenticated(false);
-        setIsDemoMode(true);
-    };
-
-    if (!isAuthenticated && !isDemoMode) {
-        return (
-            <Auth
-                onLoginSuccess={handleLoginSuccess}
-                onDemoMode={handleDemoMode}
+    return (
+        <Routes>
+            <Route path="/" element={<Navigate to="/editor" replace />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Registration />} />
+            <Route path="/editor" element={<Presentation />} />
+            <Route path="/show" element={<Slideshow isSpeakerMode={false} />} />
+            <Route
+                path="/speaker-show"
+                element={<Slideshow isSpeakerMode={true} />}
             />
-        );
-    }
-
-    return <PresentationComponent onLogout={handleLogout} />;
+            <Route path="/speaker-view" element={<SpeakerView />} />
+            <Route path="*" element={<NotFoundError />} />
+        </Routes>
+    );
 }
-
-export default App;

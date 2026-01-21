@@ -3,22 +3,17 @@ import * as appWrite from "../../store/appWrite/api";
 import styles from "./Auth.module.css";
 import joinStyles from "../../../utils/joinStyle";
 import { useNavigate } from "react-router";
-import { useDispatch } from "react-redux";
-import { loginSuccess } from "../../store/reducers/authReducer";
 
 export default function login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-
-    const dispatch = useDispatch();
     const navigate = useNavigate();
 
     async function handleLogin() {
         try {
             await appWrite.loginUser(email, password);
-            dispatch(loginSuccess());
-            navigate("/editor");
+            navigate("/editor", { replace: true });
         } catch (err) {
             setError("Ошибка входа, попробуйте позже");
         }
@@ -32,9 +27,7 @@ export default function login() {
 
                     <div className={styles.loginHelp}>
                         <span>Не зарегистрированы?</span>
-                        <a href="#" onClick={(e) => {}}>
-                            Войти
-                        </a>
+                        <a href="/register">Создать аккаунт</a>
                     </div>
 
                     <form>

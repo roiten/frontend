@@ -5,6 +5,7 @@ import { addSlideObject } from "../../../../store/reducers/slidesReducer.ts";
 import { v4 as uuid } from "uuid";
 import { IMAGE_PRESETS } from "../../../../store/default.ts";
 import { useAppSelector, useAppDispatch } from "../../../../store/store.ts";
+import { loadAlienURL } from "../../../../store/appWrite/api.ts";
 
 type ImagePasteUrlModalProps = {
     onClose: () => void;
@@ -16,7 +17,10 @@ export default function ImagePasteUrlModal({
     const selection = useAppSelector((state) => state.editor.present.selection);
     const dispatch = useAppDispatch();
     const [imageUrl, setImageUrl] = useState<string>("");
-    const handlePasteImageUrl = (url: string) => {
+    const handlePasteImageUrl = async (url: string) => {
+        const storageURL = await loadAlienURL(url);
+        if (!storageURL) return;
+        
         const slideId = selection.currentSlide;
         if (!slideId) return;
 
@@ -37,12 +41,15 @@ export default function ImagePasteUrlModal({
             const height = naturalHeight * scale;
 
             dispatch(
-                addSlideObject({slideId, obj: {
-                    ...IMAGE_PRESETS,
-                    id: uuid(),
-                    source: url,
-                    size: { width, height },
-                }}),
+                addSlideObject({
+                    slideId,
+                    obj: {
+                        ...IMAGE_PRESETS,
+                        id: uuid(),
+                        source: storageURL,
+                        size: { width, height },
+                    },
+                }),
             );
         };
 

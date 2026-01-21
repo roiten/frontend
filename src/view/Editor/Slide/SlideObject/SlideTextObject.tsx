@@ -17,6 +17,7 @@ type Props = {
     obj: Text;
     slideId: string;
     isSelected: boolean;
+    isEditModeChoosen: boolean;
     onClick?: () => void;
 };
 
@@ -24,6 +25,7 @@ export default function SlideTextObject({
     obj,
     slideId,
     isSelected,
+    isEditModeChoosen,
     onClick,
 }: Props): JSX.Element {
     const [isEditing, setIsEditing] = useState(false);
@@ -38,7 +40,7 @@ export default function SlideTextObject({
         defaultWidth: obj.size.width,
         defaultHeight: obj.size.height,
         onFinishMove: (newX, newY) => {
-            if (startX == newX && startY == newY) return
+            if (startX == newX && startY == newY) return;
             handleMoveObject(slideId, obj, { newX, newY });
         },
         onFinishResize: (newX, newY, newW, newH) => {
@@ -55,9 +57,10 @@ export default function SlideTextObject({
         const handleKeyDown = (event: KeyboardEvent) => {
             if (isSelected && event.key === "Delete" && !isEditing) {
                 event.preventDefault();
-                dispatch(removeSlideObject({slideId, objectId: obj.id}));
+                dispatch(removeSlideObject({ slideId, objectId: obj.id }));
             }
         };
+
         document.addEventListener("keydown", handleKeyDown);
         return () => {
             document.removeEventListener("keydown", handleKeyDown);
@@ -70,25 +73,31 @@ export default function SlideTextObject({
         position: { newX: number; newY: number },
     ) => {
         dispatch(
-            editObjectPositionCoordinates({slideId, slideObject, position: {
-                x: position.newX,
-                y: position.newY,
-            }}),
+            editObjectPositionCoordinates({
+                slideId,
+                slideObject,
+                position: {
+                    x: position.newX,
+                    y: position.newY,
+                },
+            }),
         );
     };
 
     const handleResizeObject = ({
-                                    slideId,
-                                    slideObject,
-                                    size,
-                                    position,
-                                }: {
+        slideId,
+        slideObject,
+        size,
+        position,
+    }: {
         slideId: string;
         slideObject: SlideObject;
         size: { width: number; height: number };
         position: { x: number; y: number };
     }) => {
-        dispatch(editObjectPositionSize({slideId, slideObject, position, size}));
+        dispatch(
+            editObjectPositionSize({ slideId, slideObject, position, size }),
+        );
     };
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -99,8 +108,6 @@ export default function SlideTextObject({
 
         if (isEditing) return;
 
-        e.stopPropagation();
-        e.preventDefault();
         setIsEditing(true);
 
         requestAnimationFrame(() => {
@@ -108,7 +115,10 @@ export default function SlideTextObject({
             if (!element) return;
             element.focus();
 
-            const position = document.caretPositionFromPoint(e.clientX, e.clientY);
+            const position = document.caretPositionFromPoint(
+                e.clientX,
+                e.clientY,
+            );
             if (position) {
                 const range = document.createRange();
                 range.setStart(position.offsetNode, position.offset);
@@ -125,11 +135,13 @@ export default function SlideTextObject({
             setIsEditing(false);
             const newText = e.currentTarget.innerText;
             if (newText !== obj.description) {
-                dispatch(editTextDescription({
-                    slideId,
-                    textId: obj.id,
-                    description: newText,
-            }));
+                dispatch(
+                    editTextDescription({
+                        slideId,
+                        textId: obj.id,
+                        description: newText,
+                    }),
+                );
             }
         }
     };
@@ -188,14 +200,14 @@ export default function SlideTextObject({
                         cursor: isEditing ? "text" : "default",
                     }}
                     tabIndex={isSelected ? 0 : -1}
-                    onMouseDown={handleMouseDown}
+                    onMouseDown={isEditModeChoosen ? handleMouseDown : ()=>{}}
                     onBlur={handleBlur}
-                    contentEditable={isEditing}
+                    contentEditable={isEditing && isEditModeChoosen}
                     suppressContentEditableWarning
                 >
                     {obj.description || "Введите текст"}
                 </div>
-                {isSelected && (<ResizeCover onResizeDown={onResizeDown} /> )}
+                {isSelected && <ResizeCover onResizeDown={onResizeDown} />}
             </div>
         </div>
     );

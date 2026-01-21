@@ -12,10 +12,21 @@ const slidesReducer = createSlice({
                 ...state,
                 {
                     ...action.payload,
-                    content: action.payload.content.map(obj => ({ ...obj })),
-                    background: { ...action.payload.background }
-                }
+                    content: action.payload.content.map((obj) => ({ ...obj })),
+                    background: { ...action.payload.background },
+                },
             ];
+        },
+
+        hideSlides(state, action: PayloadAction<string[]>) {
+            const idsToHide = new Set(action.payload);
+
+            return state.map((slide) => {
+                if (idsToHide.has(slide.id)) {
+                    return { ...slide, hidden: !slide.hidden };
+                }
+                return slide;
+            });
         },
 
         removeSlides(state, action: PayloadAction<string[]>) {
@@ -25,7 +36,7 @@ const slidesReducer = createSlice({
 
         moveSlide(
             state,
-            action: PayloadAction<{ slideIds: string[]; newIndex: number }>
+            action: PayloadAction<{ slideIds: string[]; newIndex: number }>,
         ) {
             const { slideIds, newIndex } = action.payload;
             const dragged = state.filter((s) => slideIds.includes(s.id));
@@ -33,34 +44,32 @@ const slidesReducer = createSlice({
 
             return [
                 ...remaining.slice(0, newIndex),
-                ...dragged.map((s) => ({ 
-                    ...s, 
-                    content: s.content.map(obj => ({ ...obj })),
-                    background: { ...s.background }
+                ...dragged.map((s) => ({
+                    ...s,
+                    content: s.content.map((obj) => ({ ...obj })),
+                    background: { ...s.background },
                 })),
                 ...remaining.slice(newIndex),
             ];
         },
 
-        addSlideObject(
+        addNote(
             state,
-            action: PayloadAction<{ slideId: string; obj: SlideObject }>
+            action: PayloadAction<{ slideId: string; note: string }>,
         ) {
+            const note = action.payload.note;
+
             return state.map((slide) => {
-                if (slide.id !== action.payload.slideId) {
-                    return slide;
+                if (slide.id === action.payload.slideId) {
+                    return { ...slide, note: note };
                 }
-                return { 
-                    ...slide, 
-                    content: [...slide.content, { ...action.payload.obj }],
-                    background: { ...slide.background }
-                };
+                return slide;
             });
         },
 
-        removeSlideObject(
+        addSlideObject(
             state,
-            action: PayloadAction<{ slideId: string; objectId: string }>
+            action: PayloadAction<{ slideId: string; obj: SlideObject }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -68,26 +77,42 @@ const slidesReducer = createSlice({
                 }
                 return {
                     ...slide,
-                    content: slide.content.filter(
-                        (obj) => obj.id !== action.payload.objectId
-                    ).map(obj => ({ ...obj })),
-                    background: { ...slide.background }
+                    content: [...slide.content, { ...action.payload.obj }],
+                    background: { ...slide.background },
+                };
+            });
+        },
+
+        removeSlideObject(
+            state,
+            action: PayloadAction<{ slideId: string; objectId: string }>,
+        ) {
+            return state.map((slide) => {
+                if (slide.id !== action.payload.slideId) {
+                    return slide;
+                }
+                return {
+                    ...slide,
+                    content: slide.content
+                        .filter((obj) => obj.id !== action.payload.objectId)
+                        .map((obj) => ({ ...obj })),
+                    background: { ...slide.background },
                 };
             });
         },
 
         editSlideBackground(
             state,
-            action: PayloadAction<{ slideId: string; background: Background }>
+            action: PayloadAction<{ slideId: string; background: Background }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
                     return slide;
                 }
-                return { 
-                    ...slide, 
+                return {
+                    ...slide,
                     background: { ...action.payload.background },
-                    content: slide.content.map(obj => ({ ...obj }))
+                    content: slide.content.map((obj) => ({ ...obj })),
                 };
             });
         },
@@ -98,7 +123,7 @@ const slidesReducer = createSlice({
                 slideId: string;
                 slideObject: SlideObject;
                 position: { x: number; y: number };
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -110,12 +135,12 @@ const slidesReducer = createSlice({
                         if (obj.id !== action.payload.slideObject.id) {
                             return { ...obj };
                         }
-                        return { 
-                            ...obj, 
-                            position: { ...action.payload.position } 
+                        return {
+                            ...obj,
+                            position: { ...action.payload.position },
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -127,7 +152,7 @@ const slidesReducer = createSlice({
                 slideObject: SlideObject;
                 position: { x: number; y: number };
                 size: { width: number; height: number };
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -139,13 +164,13 @@ const slidesReducer = createSlice({
                         if (obj.id !== action.payload.slideObject.id) {
                             return { ...obj };
                         }
-                        return { 
-                            ...obj, 
+                        return {
+                            ...obj,
                             position: { ...action.payload.position },
-                            size: { ...action.payload.size }
+                            size: { ...action.payload.size },
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -156,7 +181,7 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 size: number;
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -165,19 +190,22 @@ const slidesReducer = createSlice({
                 return {
                     ...slide,
                     content: slide.content.map((obj) => {
-                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                        if (
+                            obj.id !== action.payload.textId ||
+                            obj.type !== "text"
+                        ) {
                             return { ...obj };
                         }
                         const textObj = obj as Text;
-                        return { 
-                            ...textObj, 
-                            font: { 
-                                ...textObj.font, 
-                                size: action.payload.size 
-                            }
+                        return {
+                            ...textObj,
+                            font: {
+                                ...textObj.font,
+                                size: action.payload.size,
+                            },
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -188,7 +216,7 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 family: string;
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -197,19 +225,22 @@ const slidesReducer = createSlice({
                 return {
                     ...slide,
                     content: slide.content.map((obj) => {
-                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                        if (
+                            obj.id !== action.payload.textId ||
+                            obj.type !== "text"
+                        ) {
                             return { ...obj };
                         }
                         const textObj = obj as Text;
-                        return { 
-                            ...textObj, 
-                            font: { 
-                                ...textObj.font, 
-                                family: action.payload.family 
-                            }
+                        return {
+                            ...textObj,
+                            font: {
+                                ...textObj.font,
+                                family: action.payload.family,
+                            },
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -220,7 +251,7 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 color: string;
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -229,19 +260,22 @@ const slidesReducer = createSlice({
                 return {
                     ...slide,
                     content: slide.content.map((obj) => {
-                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                        if (
+                            obj.id !== action.payload.textId ||
+                            obj.type !== "text"
+                        ) {
                             return { ...obj };
                         }
                         const textObj = obj as Text;
-                        return { 
-                            ...textObj, 
-                            font: { 
-                                ...textObj.font, 
-                                color: action.payload.color 
-                            }
+                        return {
+                            ...textObj,
+                            font: {
+                                ...textObj.font,
+                                color: action.payload.color,
+                            },
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -252,7 +286,7 @@ const slidesReducer = createSlice({
                 slideId: string;
                 textId: string;
                 description: string;
-            }>
+            }>,
         ) {
             return state.map((slide) => {
                 if (slide.id !== action.payload.slideId) {
@@ -261,15 +295,18 @@ const slidesReducer = createSlice({
                 return {
                     ...slide,
                     content: slide.content.map((obj) => {
-                        if (obj.id !== action.payload.textId || obj.type !== "text") {
+                        if (
+                            obj.id !== action.payload.textId ||
+                            obj.type !== "text"
+                        ) {
                             return { ...obj };
                         }
-                        return { 
-                            ...obj, 
-                            description: action.payload.description 
+                        return {
+                            ...obj,
+                            description: action.payload.description,
                         };
                     }),
-                    background: { ...slide.background }
+                    background: { ...slide.background },
                 };
             });
         },
@@ -278,7 +315,7 @@ const slidesReducer = createSlice({
             return action.payload.map((slide) => ({
                 ...slide,
                 content: slide.content.map((obj) => ({ ...obj })),
-                background: { ...slide.background }
+                background: { ...slide.background },
             }));
         },
     },
@@ -287,7 +324,9 @@ const slidesReducer = createSlice({
 export const {
     addSlide,
     removeSlides,
+    hideSlides,
     moveSlide,
+    addNote,
     addSlideObject,
     removeSlideObject,
     editObjectPositionCoordinates,

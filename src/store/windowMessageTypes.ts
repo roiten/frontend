@@ -1,0 +1,5 @@
+export const enum WindowMessage {
+  SPEAKER_READY = 'SPEAKER_READY',
+  INITIAL_DATA = 'INITIAL_DATA',
+  SET_SLIDE_INDEX = 'SET_SLIDE_INDEX'
+}

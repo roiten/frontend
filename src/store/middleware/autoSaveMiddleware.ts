@@ -19,7 +19,6 @@ const autoSaveMiddleware: Middleware<{}, RootState> =
 
             saveTimeout = setTimeout(() => {
                 saveTimeout = null;
-                console.log("autosave fired", action);
 
                 updatePresentationDocument(presentationId, curr)
                     .catch(console.error);

@@ -1,0 +1,8 @@
+.errorPage {
+    background-color: whitesmoke;
+    color: rgb(79, 191, 159);
+
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+}

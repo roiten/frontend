@@ -1,7 +1,11 @@
 import SlidePreview from "./SlidePreview.tsx";
 import RoundButton from "../Common/Button/RoundButton/RoundButton.tsx";
 import styles from "./Slidebar.module.css";
-import { addSlide, removeSlides } from "../../../store/reducers/slidesReducer.ts";
+import {
+    addSlide,
+    hideSlides,
+    removeSlides,
+} from "../../../store/reducers/slidesReducer.ts";
 import { chooseSlide } from "../../../store/reducers/selectionReducer.ts";
 import { useSlideMove } from "./hooks/useSlideMove.ts";
 import { useState } from "react";
@@ -10,10 +14,11 @@ import type { Slide } from "../../../store/types.ts";
 import { v4 as uuid } from "uuid";
 import { useAppSelector } from "../../../store/store.ts";
 
-
 export default function Slidebar() {
     const slides = useAppSelector((state) => state.editor.present.slides);
-    const currentSlideId = useAppSelector((state) => state.editor.present.selection.currentSlide);
+    const currentSlideId = useAppSelector(
+        (state) => state.editor.present.selection.currentSlide,
+    );
     const presentationId = useAppSelector(
         (state) => state.editor.present.meta.presentationId,
     );
@@ -42,7 +47,8 @@ export default function Slidebar() {
                 const newSlide: Slide = {
                     id: uuid(),
                     content: [],
-                    background: { type: 'color', color: 'white' },
+                    background: { type: "color", color: "white" },
+                    hidden: false,
                 };
                 dispatch(addSlide(newSlide));
             },
@@ -53,6 +59,16 @@ export default function Slidebar() {
             action: () => {
                 if (selectedSlidesIds.length > 0) {
                     dispatch(removeSlides(selectedSlidesIds));
+                    setSelectedSlidesIds([]);
+                }
+            },
+        },
+        {
+            name: "Скрыть/показать слайд",
+            icon: "/icons/eye.svg",
+            action: () => {
+                if (selectedSlidesIds.length > 0) {
+                    dispatch(hideSlides(selectedSlidesIds));
                     setSelectedSlidesIds([]);
                 }
             },
@@ -117,7 +133,9 @@ export default function Slidebar() {
                     <RoundButton
                         key={tool.name}
                         tool={tool}
-                        onClick={() => tool.action?.()}
+                        onClick={() => {
+                            tool.action?.();
+                        }}
                         enabled={checkPresentationOpened()}
                     />
                 ))}
@@ -126,7 +144,8 @@ export default function Slidebar() {
             <div className={styles.slidebarList}>
                 {visibleSlides.map((slide, index) => {
                     const isSelected = slide.id === currentSlideId;
-                    const isDragged = isDragging && draggedSlidesIds.includes(slide.id);
+                    const isDragged =
+                        isDragging && draggedSlidesIds.includes(slide.id);
 
                     return (
                         <div
@@ -134,14 +153,18 @@ export default function Slidebar() {
                             className={`${styles.slideWrapper} ${
                                 isDragged ? styles.draggingSlide : ""
                             }`}
-                            onMouseEnter={() => isDragging && handleDragOver(index)}
+                            onMouseEnter={() =>
+                                isDragging && handleDragOver(index)
+                            }
                             onMouseUp={handleDrop}
                         >
                             <SlidePreview
                                 slide={slide}
                                 isSelected={isSelected}
                                 index={index}
-                                onClick={(e) => handleSlideClick(slide.id, e, index)}
+                                onClick={(e) =>
+                                    handleSlideClick(slide.id, e, index)
+                                }
                                 onMouseDown={() => {
                                     if (isSelected) {
                                         handleDragStart();
